@@ -4,7 +4,7 @@ For the assignment for the course 'Computational Musicology' a portfolio will be
 This portfolio will mainly focus on music listening behavior of Spotify users globally, and in the Netherlands before and during the COVID-19 pandemic. Specifically, whether music preferences have shifted during the pandemic and whether changes can be identified to the restrictions imposed by the Dutch government (e.g. lockdown and curfew).
 
 ### Corpus
-In order to analyze general listening behavior, the corpus will be based on the following variables:
+In order to analyze general listening behavior, the corpus will be focus on the following variables:
 * Geographic Region
 * Playlist
 * Genre
