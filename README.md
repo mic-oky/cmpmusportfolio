@@ -7,7 +7,7 @@ This portfolio will mainly focus on music listening behavior of Spotify users gl
 In order to analyze general listening behavior, the corpus will be focus on the following variables:
 * Geographic Region
 * Playlist
-* Genre
+* Spotify Audio features
 * Time
 
 #### Geographic Region
