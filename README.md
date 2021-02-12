@@ -20,5 +20,4 @@ In order to keep track on the average listening behavior of Spotify users, the â
 The changes (or lack thereof) listening behavior will be measured by the genre.
 
 #### Time
-The variable time will be used to identify periods before and during the pandemic that may explain the change of musical preferences as shown in the top and viral playlists. As well as help compare annual periods such as the December Holiday season before and during the pandemic. 
-Michael Okyere 
+The variable time will be used to identify periods before and during the pandemic that may explain the change of musical preferences as shown in the top and viral playlists. As well as help compare annual periods such as the December Holiday season before and during the pandemic.
