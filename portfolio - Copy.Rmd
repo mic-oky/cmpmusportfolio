@@ -1,0 +1,75 @@
+---
+title: "ComMus1 (week 5 - Lecture 1)"
+author: "Michael"
+date: "10-2-2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(spotifyr)
+```   
+
+
+```{r Create Corpus}
+#Read filenames of csv's
+files <- list.files(path="csvPlaylists/", pattern="week+.*csv")
+
+#Create list of data frame per week without the ".csv" part 
+weeks <- substr(files,1,nchar(files)-4)
+
+#Load all files in a loop using weeks data frame 
+for(i in weeks){
+    filepath <- file.path("csvPlaylists",paste(i,".csv",sep=""))
+    #assign csv to variable df
+    df <- read.csv(filepath)
+    #clean data frame: remove header, set 1st row as header, remove 1st row
+    names(df) <- NULL 
+    names(df) <- df[1,] 
+    df <- df[-1,]
+    #Select first 50 values (Top 50) of df 
+    df <- head(df,50)
+    #Loop-in-loop: for each week in df
+    for(j in df){
+        #Set variables to correct datatype
+        df$Position <- as.integer(as.character(df$Position))
+        df$Streams <- as.integer(as.character(df$Streams))
+        #Extract Spotify URI from URL
+        df$URI <- str_replace(df$URL, "https://open.spotify.com/track/", "")
+        #Create variable "week*_20**" and assign current df
+        assign(paste0("", i), df)
+        #Create variable "featuresweek*_20**" and assign Spotify audiofeatures
+        assign(paste0("features", i),get_track_audio_features(df$URI))
+    }
+}
+
+```
+
+```{r test}
+week1 = read.csv("csvPlaylists/week1_2020.csv")
+names(week1) <- NULL
+names(week1) <- week1[1,]
+# week1 <- week1[-1,]
+# week1$Position <- as.integer(as.character(week1$Position))
+# week1$Streams <- as.integer(as.character(week1$Streams))
+# #week1$URI <- gsub("https://open.spotify.com/track/", "", week1$URL)
+# week1$URI <- str_replace(week1$URL, "https://open.spotify.com/track/", "")
+# week1features <- get_track_audio_features(head(week1$URI))
+# 
+# a1 <- week1features
+# a2 <- a1 %>%
+#   summarize(mean_val = mean(valence), mean_dan= mean(danceability))
+# a2
+```
+
+```{r}
+
+aura <- get_track_audio_features("7CNyWWGAo52HxOiFy1pq0s")
+itsok <- get_track_audio_features("3SfGwK0VnAZTU60BlMsIiX")
+df2 <- rbind(aura,itsok)
+df2
+
+```
+

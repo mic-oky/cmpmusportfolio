@@ -197,25 +197,52 @@ summary {
 
 <div id="computational-musicology-portfolio" class="section level1">
 <h1>Computational Musicology Portfolio</h1>
-<p>For the assignment for the course ‘Computational Musicology’ a portfolio will be created in order to perform various analyses relating to music. This portfolio will mainly focus on music listening behavior of Spotify users globally, and in the Netherlands before and during the COVID-19 pandemic. Specifically, whether music preferences have shifted during the pandemic and whether changes can be identified to the restrictions imposed by the Dutch government (e.g. lockdown and curfew).</p>
+<p>For the assignment for the course ‘Computational Musicology’ a portfolio will be created in order to perform various analyses relating to music. This portfolio will mainly focus on music listening behavior of Spotify in the Netherlands before and during the COVID-19 pandemic. Specifically, whether music preferences have shifted during the pandemic and whether changes can be identified to the restrictions imposed by the Dutch government (e.g. lockdown and curfew).</p>
 <div id="corpus" class="section level3">
 <h3>Corpus</h3>
-<p>In order to analyze general listening behavior, the corpus will be focus on the following variables: * Geographic Region * Playlist * Genre * Time</p>
-<div id="geographic-region" class="section level4">
-<h4>Geographic Region</h4>
-<p>Since the portfolio will make comparisons between the Netherlands and the rest of the world geographic regions in the corpus will be the Netherlands and global.</p>
-</div>
+<p>In order to analyze general listening behavior, the corpus will be focus on the following variables: * Playlist * Spotify Audio Features * Time</p>
 <div id="playlist" class="section level4">
 <h4>Playlist</h4>
 <p>In order to keep track on the average listening behavior of Spotify users, the ‘Top 50’ and ‘Viral 50’ playlists will be analyzed over time per geographic region.</p>
 </div>
-<div id="genre" class="section level4">
-<h4>Genre</h4>
-<p>The changes (or lack thereof) listening behavior will be measured by the genre.</p>
+<div id="spotify-audio-features" class="section level4">
+<h4>Spotify Audio Features</h4>
+<p>The changes (or lack thereof) listening behavior will be measured by the the different Audio Features from the Spotify API.</p>
 </div>
 <div id="time" class="section level4">
 <h4>Time</h4>
 <p>The variable time will be used to identify periods before and during the pandemic that may explain the change of musical preferences as shown in the top and viral playlists. As well as to help compare annual periods such as the December Holiday season before and during the pandemic.</p>
+<pre class="r"><code>#Read filenames of csv&#39;s
+files &lt;- list.files(path=&quot;csvPlaylists/&quot;, pattern=&quot;week+.*csv&quot;)
+
+#Create list of data frame per week without the &quot;.csv&quot; part 
+weeks &lt;- substr(files,1,nchar(files)-4)
+
+#Load all files in a loop using weeks data frame 
+for(i in weeks){
+    filepath &lt;- file.path(&quot;csvPlaylists&quot;,paste(i,&quot;.csv&quot;,sep=&quot;&quot;))
+    #assign csv to variable df
+    df &lt;- read.csv(filepath)
+    #clean data frame: remove header, set 1st row as header, remove 1st row
+    names(df) &lt;- NULL 
+    names(df) &lt;- df[1,] 
+    df &lt;- df[-1,]
+    #Select first 50 values (Top 50) of df 
+    df &lt;- head(df,50)
+    #Loop-in-loop: for each week in df
+    for(j in df){
+        #Set variables to correct datatype
+        df$Position &lt;- as.integer(as.character(df$Position))
+        df$Streams &lt;- as.integer(as.character(df$Streams))
+        #Extract Spotify URI from URL
+        df$URI &lt;- str_replace(df$URL, &quot;https://open.spotify.com/track/&quot;, &quot;&quot;)
+        #Create variable &quot;week*_20**&quot; and assign current df
+        assign(paste0(&quot;&quot;, i), df)
+        #Create variable &quot;featuresweek*_20**&quot; and assign Spotify audiofeatures
+        assign(paste0(&quot;features&quot;, i),get_track_audio_features(df$URI))
+    }
+    
+}</code></pre>
 </div>
 </div>
 </div>
