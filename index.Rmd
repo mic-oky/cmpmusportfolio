@@ -2,7 +2,13 @@
 title: "Computational Musicology Portfolio"
 author: "Michael Okyere"
 date: "10-2-2021"
-output: html_document
+#output: html_document
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+    #theme: darkly
+    theme: default
+#runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -11,46 +17,43 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(spotifyr)
 library(ggplot2)
+library(compmus)
+library(plotly)
+library(reshape2)
+library(crosstalk)
+library(d3scatter)
 ```
 
-# Computational Musicology Portfolio
+<!-- Code for corpus -->
 
-For the assignment for the course 'Computational Musicology' a portfolio will be created in order to perform various analyses relating to music.
-This portfolio will mainly focus on music listening behavior of Spotify in the Netherlands before and during the COVID-19 pandemic. Specifically, whether music preferences have shifted during the pandemic and whether changes can be identified to the restrictions imposed by the Dutch government (e.g. lockdown and curfew).
-
-### Corpus
-In order to analyze general listening behavior, the corpus will be focus on the following variables:
-* Playlist
-* Spotify Audio Features
-* Time 
-
-#### Playlist
-In order to keep track on the average listening behavior of Spotify users, the ‘Top 50’ and ‘Viral 50’ playlists will be analyzed over time per geographic region.
-
-#### Spotify Audio Features
-The changes (or lack thereof) listening behavior will be measured by the the different Audio Features from the Spotify API.
-
-#### Time
-The variable time will be used to identify periods before and during the pandemic that may explain the change of musical preferences as shown in the top and viral playlists. As well as to help compare annual periods such as the December Holiday season before and during the pandemic.
-
-```{r Create Corpus}
+```{r Create Corpus, include=FALSE}
 #Read filenames of csv's
 files <- list.files(path="csvPlaylists/", pattern="week+.*csv")
 
 #Create list of data frame per week without the ".csv" part 
 weeks <- substr(files,1,nchar(files)-4)
+featuresweeks <- paste0("features", substr(files,1,nchar(files)-4))
 
 #Load all files in a loop using weeks data frame 
 for(i in weeks){
     filepath <- file.path("csvPlaylists",paste(i,".csv",sep=""))
     #assign csv to variable df
     df <- read.csv(filepath)
+    
     #clean data frame: remove header, set 1st row as header, remove 1st row
     names(df) <- NULL 
     names(df) <- df[1,] 
-    df <- df[-1,]
+    
+    #Create year and week variables and assign week and year to playlist
+    df$year[i] <- str_sub(i, -4)
+    df$week[i] <- str_remove(substr(i,1,nchar(i)-5), "week")
+
+    #Remove 1st row (NA's)    
+    df <- df[-1,]    
+    
     #Select first 50 values (Top 50) of df 
     df <- head(df,50)
+    
     #Loop-in-loop: for each week in df
     for(j in df){
         #Set variables to correct datatype
@@ -58,11 +61,416 @@ for(i in weeks){
         df$Streams <- as.integer(as.character(df$Streams))
         #Extract Spotify URI from URL
         df$URI <- str_replace(df$URL, "https://open.spotify.com/track/", "")
+        
         #Create variable "week*_20**" and assign current df
         assign(paste0("", i), df)
         #Create variable "featuresweek*_20**" and assign Spotify audiofeatures
-        assign(paste0("features", i),get_track_audio_features(df$URI))
+        assign(paste0("features", i),cbind(get_track_audio_features(df$URI), 
+                                           year = str_sub(i, -4),
+                                           week = str_remove(substr(i,1,nchar(i)-5), "week"))
+               )
+      
     }
-    
+
 }
 ```
+
+```{r Data Wrangling, include=FALSE}
+#Splitting all weeks to their respective dataframe
+weeks2021 <- weeks[grep("^week.*_2021$", weeks)]
+weeks2020 <- weeks[grep("^week.*_2020$", weeks)]
+weeks2019 <- weeks[grep("^week.*_2019$", weeks)]
+fweeks2021 <- featuresweeks[grep("^featuresweek.*_2021$", featuresweeks)]
+fweeks2020 <- featuresweeks[grep("^featuresweek.*_2020$", featuresweeks)]
+fweeks2019 <- featuresweeks[grep("^featuresweek.*_2019$", featuresweeks)]
+
+#Sorting all weeks chronologically
+as.numeric(gsub('^week([0123456789]*)\\_2021$','\\1',weeks2021))->sort2021
+sorted_weeks2021 <- weeks2021[order(sort2021)]
+sorted_fweeks2021 <- fweeks2021[order(sort2021)]
+
+as.numeric(gsub('^week([0123456789]*)\\_2020$','\\1',weeks2020))->sort2020
+sorted_weeks2020 <- weeks2020[order(sort2020)]
+sorted_fweeks2020 <- fweeks2020[order(sort2020)]
+
+as.numeric(gsub('^week([0123456789]*)\\_2019$','\\1',weeks2019))->sort2019
+sorted_weeks2019 <- weeks2019[order(sort2019)]
+sorted_fweeks2019 <- fweeks2019[order(sort2019)]
+```
+
+```{r Summarizing features, include=FALSE}
+summary2019 = list()
+summary2020 = list()
+summary2021 = list()
+fsummary2019 = list()
+fsummary2020 = list()
+fsummary2021 = list()
+
+# Extracting featuredata from sorted list
+for(l in sorted_fweeks2019){
+    dat <- get(l) %>%
+        summarize(mean_dance = mean(danceability),
+                  mean_energy = mean(energy),
+                  mean_key = mean(key),
+                  mean_loudness = mean(loudness),
+                  mean_mode = mean(mode),
+                  mean_speechiness = mean(speechiness),
+                  mean_acousticness = mean(acousticness),
+                  mean_instrumentalness = mean(instrumentalness),
+                  mean_liveness = mean(liveness),
+                  mean_valence = mean(valence),
+                  mean_tempo = mean(tempo),
+                  mean_duration_minute = mean(duration_ms/1000/60),
+                  year = max(year)
+                  )
+    fsummary2019[[l]] <- dat 
+}
+
+for(l in sorted_fweeks2020){
+    dat <- get(l) %>%
+        summarize(mean_dance = mean(danceability),
+                  mean_energy = mean(energy),
+                  mean_key = mean(key),
+                  mean_loudness = mean(loudness),
+                  mean_mode = mean(mode),
+                  mean_speechiness = mean(speechiness),
+                  mean_acousticness = mean(acousticness),
+                  mean_instrumentalness = mean(instrumentalness),
+                  mean_liveness = mean(liveness),
+                  mean_valence = mean(valence),
+                  mean_tempo = mean(tempo),
+                  mean_duration_minute = mean(duration_ms/1000/60),
+                  year = max(year))
+    fsummary2020[[l]] <- dat 
+}
+
+for(l in sorted_fweeks2021){
+    dat <- get(l) %>%
+        summarize(mean_dance = mean(danceability),
+                  mean_energy = mean(energy),
+                  mean_key = mean(key),
+                  mean_loudness = mean(loudness),
+                  mean_mode = mean(mode),
+                  mean_speechiness = mean(speechiness),
+                  mean_acousticness = mean(acousticness),
+                  mean_instrumentalness = mean(instrumentalness),
+                  mean_liveness = mean(liveness),
+                  mean_valence = mean(valence),
+                  mean_tempo = mean(tempo),
+                  mean_duration_minute = mean(duration_ms/1000/60),
+                  year = max(year))
+    fsummary2021[[l]] <- dat 
+}
+
+# Extracting low-level top track data from sorted list
+for(l in sorted_weeks2019){
+    dat <- get(l) %>%
+        summarize(mean_streams = mean(Streams),
+                  min_streams = min(Streams),
+                  max_streams = max(Streams),
+                  top_track = head(paste(`Track Name`,"-" , Artist), 1)
+                  )
+    summary2019[[l]] <- dat
+}
+
+for(l in sorted_weeks2020){
+    dat <- get(l) %>%
+        summarize(mean_streams = mean(Streams),
+                  min_streams = min(Streams),
+                  max_streams = max(Streams),
+                  top_track = head(paste(`Track Name`,"-" , Artist), 1)
+                  )
+    summary2020[[l]] <- dat
+}
+
+for(l in sorted_weeks2021){
+    dat <- get(l) %>%
+        summarize(mean_streams = mean(Streams),
+                  min_streams = min(Streams),
+                  max_streams = max(Streams),
+                  top_track = head(paste(`Track Name`,"-" , Artist), 1)
+                  )
+    summary2021[[l]] <- dat
+}
+
+# Binding rows 
+fdata2019 <- dplyr::bind_rows(fsummary2019)
+fdata2020 <- dplyr::bind_rows(fsummary2020)
+fdata2021 <- dplyr::bind_rows(fsummary2021)
+sdata2019 <- dplyr::bind_rows(summary2019)
+sdata2020 <- dplyr::bind_rows(summary2020)
+sdata2021 <- dplyr::bind_rows(summary2021)
+
+
+data2019 <- cbind(week_year = str_remove(sorted_weeks2019, "_2019"),fdata2019, sdata2019)
+data2020 <- cbind(week_year = str_remove(sorted_weeks2020, "_2020"),fdata2020, sdata2020)
+data2021 <- cbind(week_year = str_remove(sorted_weeks2021, "_2021"),fdata2021, sdata2021)
+
+dataAll <- dplyr::bind_rows(data2019, data2020, data2021)
+
+
+```
+
+```{r COVID-19 dataset, include = FALSE}
+# Read COVID-CSV
+covid_dat_2020 <- read.csv("csvCOVID/COVID-19_2020.csv", header = TRUE, sep = ";")
+covid_dat_2021 <- read.csv("csvCOVID/COVID-19_2021.csv", header = TRUE, sep = ";")
+
+# Create zero dataframe for 2019 (Since no COVID data available from RIVM till Feb 2020)
+covid_dat_2019 <- data.frame(week = c(45:52),
+                             hospital_admission = c(0),
+                             cum_hospital_admission = c(0),
+                             deceased = c(0),
+                             cum_deceased = c(0),
+                             total_reported = c(0),
+                             cum_total_reported = c(0)
+                             )
+
+# Rename weeknumbers to indicate year + factor weeks to avoid grouping by week
+covid_dat_2019y <- covid_dat_2019
+covid_dat_2019y$week_year <- paste0(covid_dat_2019$week, "_2019")
+covid_dat_2019y$week_year <- factor(covid_dat_2019y$week_year, levels = covid_dat_2019y$week_year)
+
+covid_dat_2019y$week <- factor(covid_dat_2019y$week, levels = covid_dat_2019y$week)
+covid_dat_2019y$year <- 2019
+
+
+covid_dat_2020y <- covid_dat_2020
+covid_dat_2020y$week_year <- paste0(covid_dat_2020$week, "_2020")
+covid_dat_2020y$week_year <- factor(covid_dat_2020y$week_year, levels = covid_dat_2020y$week_year)
+
+covid_dat_2020y$week <- factor(covid_dat_2020y$week, levels = covid_dat_2020y$week)
+covid_dat_2020y$year <- 2020
+
+
+covid_dat_2021y <- covid_dat_2021
+covid_dat_2021y$week_year <- paste0(covid_dat_2021$week, "_2021")
+covid_dat_2021y$week_year <- factor(covid_dat_2021y$week_year, levels = covid_dat_2021y$week_year)
+
+covid_dat_2021y$week <- factor(covid_dat_2021y$week, levels = covid_dat_2021y$week)
+covid_dat_2021y$year <- 2021
+
+
+# Combine dataframes + factor weeks to avoid grouping by week
+covid_daty <- dplyr::bind_rows(covid_dat_2019y,covid_dat_2020y,covid_dat_2021y)
+#covid_daty$week <- factor(covid_daty$week, levels = covid_daty$year)
+covid_daty$week_year <- factor(covid_daty$week_year, levels = covid_daty$week_year)
+#covid_daty$week <- as.character(covid_daty$week)
+#covid_daty$week <- factor(covid_daty$week, ordered = is.ordered(covid_daty$week))
+
+#comb_data <- dplyr::bind_rows(dataAll, covid_daty)
+```
+
+```{r Combining Datasets, include = FALSE}
+
+#NOTE temporarily removed first column, can rename later if needed, and added zero row for spotify week 7, can add later
+comb_data <- dplyr::bind_cols(rbind(dataAll[-1], 0), covid_daty)
+```
+
+<!-- Code for dashboard -->
+
+<!-- Page 1 (additional pages optional can add extra frames) -->
+<!-- Frame 1 -->
+
+### Did Spotify users in the Netherlands change their listening behavior during the COVID-19 pandemic?
+
+#### **Computational Musicology Portfolio**
+
+For the assignment for the course 'Computational Musicology' a portfolio will be created in order to perform various analyses relating to music.
+This portfolio will mainly focus on music listening behavior of Spotify in the Netherlands before and during the COVID-19 pandemic. Specifically, whether music preferences have shifted during the pandemic and whether changes can be identified to the restrictions imposed by the Dutch government (e.g. lockdown and curfew).
+
+**Corpus**
+
+In order to analyze general listening behavior, the corpus will be focused on the following variables:
+
+* Playlist
+* Spotify Audio Features
+* Time
+
+**Playlist**
+
+In order to keep track on the average listening behavior of Dutch Spotify users, the weekly ‘Top 50’ and ‘Viral 50’ playlists from the Netherlands will be analyzed over time.
+
+**Spotify Audio Features**
+
+The changes (or lack thereof) listening behavior will be measured by the the different Audio Features from the Spotify API.
+
+**Time**
+
+The variable time will be used to identify periods before and during the pandemic that may explain the change of musical preferences as shown in the top and viral playlists. As well as to help compare annual periods such as the December Holiday season before and during the pandemic.
+
+<!-- Frame 2 -->
+
+### Trip down memory lane: What was life like before the pandemic?
+
+```{r, echo = FALSE}
+shared_2019 <- SharedData$new(data2019)
+
+d3scatter(shared_2019, ~mean_dance, ~mean_streams, ~week_year)
+
+# bscols(
+#   d3scatter(shared_2019, ~mean_valence, ~mean_energy, ~week_year, width = "100%"),
+#   d3scatter(shared_2019, ~mean_dance, ~mean_streams, ~week_year, width = "100%")
+# )
+
+```
+
+***
+
+Some text
+
+<!-- Frame 3 -->
+
+### Covid-19: Visualized
+
+```{r, echo = FALSE}
+# Convert df to Long format => ggplot to allow multiple variables in plot
+#covid_daty.long <- melt(covid_daty, id = measure = c("deceased", "hospital_admission"))
+#covid_daty.long$year <- rbind(cbind(covid_daty$year,covid_daty$year))
+#covid_daty.long$year <-
+
+# covid_daty.long <- melt(covid_daty, id.vars = c("week", "year", "week_year"), measure.vars = c("deceased", "hospital_admission"))
+
+comb_data.long <- melt(comb_data, id.vars = c("week", "year...13", "week_year", "max_streams", "min_streams", "top_track"), measure.vars = c("deceased", "hospital_admission"))
+
+#p <- ggplot(covid_daty.long, aes(year, value, fill = variable)) + geom_bar(stat = "identity", position = "dodge") + #theme(axis.text.x, element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# p <- ggplot(covid_daty.long, aes(week_year, value, fill = variable)) + geom_bar(stat = "identity", position = "dodge") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# p <- ggplot(comb_data.long, aes(week_year, value, fill = variable)) + geom_bar(stat = "identity", position = "dodge")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+options(scipen = 999)
+coeff <- 1000
+
+#p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min_streams, label3 = top_track)) +
+
+p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min_streams, label3 = top_track)) +
+  geom_point(aes(y = max_streams/coeff, color = max_streams), stat = "identity") +
+  geom_bar(aes(y = value, fill = variable), stat = "identity", position = "dodge")+ 
+  
+  scale_y_continuous(
+    
+    name = "Number of Admitted or Hospitalized",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(trans = ~ . * coeff, name="Number of Streams of Top 1 track")
+  )+
+
+  theme(axis.title.y = element_text(size=13),
+        axis.title.y.right = element_text(size=13),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggplotly(p)
+
+
+```
+
+```{r}
+# coeff <- 10
+# 
+# # A few constants
+# temperatureColor <- "#69b3a2"
+# priceColor <- rgb(0.2, 0.6, 0.9, 1)
+# 
+# ggplot(head(data, 80), aes(x=day)) +
+#   
+#   geom_bar( aes(y=temperature), stat="identity", size=.1, fill=temperatureColor, color="black", alpha=.4) + 
+#   geom_line( aes(y=price / coeff), size=2, color=priceColor) +
+#   
+#   scale_y_continuous(
+#     
+#     # Features of the first axis
+#     name = "Temperature (Celsius °)",
+#     
+#     # Add a second axis and specify its features
+#     sec.axis = sec_axis(~.*coeff, name="Price ($)")
+#   ) + 
+#   
+#   theme_ipsum() +
+# 
+#   theme(
+#     axis.title.y = element_text(color = temperatureColor, size=13),
+#     axis.title.y.right = element_text(color = priceColor, size=13)
+#   ) +
+# 
+#   ggtitle("Temperature down, price up")
+```
+
+***
+
+#### The first case
+On February 27th, 2020 (week 9), the first case of COVID-19 had been confirmed in the Netherlands.
+Before this case, when everything was normal, the number of streams of the top songs decreased untill the end of the holiday season. Probably due people coming together to enjoy (the holiday) music, movies or other activities together, instead of individually. In the first few weeks of 2021 the number of streams started rising again.  
+
+From week 5 the number of top streams started to decline. And even When the first cases, the first admissions into the hospitals, and first deaths were reported the number continued to decline.
+
+#### Togetherness and solidariy during lockdown
+As the situation became more severe, with record COVID-related hostpital admissions in week 13, the Dutch government implemented the 'intelligent' lockdown. This led to a relative high public solidarity towards those affected by the virus, especially health care workers. This may explain the sudden spike of the top stream from 1,598,458 to 3,482,822 streams in two weeks, with the song 17 Miljoen Mensen - Live @538 in Ahoy - Davina Michelle topping the charts for five consecutive weeks. 17 Miljoen Mensen (17 Million people) [was dedicated to the Dutch people who are affected by the virus](https://www.ad.nl/show/davina-michelle-en-snelle-brengen-17-miljoen-mensen-uit~a9bdeb0e). 
+
+<!-- Frame 4 -->
+
+### 17 Miljoen Mensen - 15 Miljoen Mensen
+
+```{r, echo = FALSE}
+## 17 Miljoen
+miljoen_17 <-
+  get_tidy_audio_analysis("7e42rjxCt8tPjglU9VyBcz") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+miljoen_17f <- get_track_audio_features("7e42rjxCt8tPjglU9VyBcz")
+
+## 15 Miljoen
+miljoen_15 <-
+  get_tidy_audio_analysis("2GBJFvDr62eIX24a3t6pBr") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+miljoen_15f <- get_track_audio_features("2GBJFvDr62eIX24a3t6pBr")
+
+miljoen_17f <- as.data.frame(t(miljoen_17f))
+miljoen_15f <- as.data.frame(t(miljoen_15f))
+
+miljoen <- cbind(miljoen_17f,miljoen_15f)
+
+compmus_long_distance(
+  miljoen_17 %>% mutate(pitches = map(pitches, compmus_normalise, "euclidean")),
+  miljoen_15 %>% mutate(pitches = map(pitches, compmus_normalise, "euclidean")),
+  feature = pitches,
+  method = "euclidean"
+) %>%
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_equal() +
+  labs(x = "17 Million 2021", y = "15 Million 1996") +
+  theme_minimal() +
+  scale_fill_viridis_c(guide = NULL)
+```
+
+***
+
+"17 Miljoen Mensen" (2021) is actually a cover of the track "15 Miljoen Mensen" (1996), we'll analyze if there are any similarites between the two tracks. One difference that is noticed instantly is the population increase of 2 million people.
+
+`r knitr::kable(miljoen)`
+
+<!-- Frame 5 -->
+
+### Frame 5?
+
+```{r, echo = FALSE}
+p <- ggplot(data2020, aes(mean_valence, mean_energy, size = mean_dance, color = mean_tempo, label = week_year))
+
+ggplotly(p + geom_point())
+```
+
+***
+
+Don't know
