@@ -7,7 +7,7 @@ output:
   flexdashboard::flex_dashboard:
     storyboard: true
     #theme: darkly
-    theme: default
+    theme: cosmo
 #runtime: shiny
 ---
 
@@ -265,6 +265,8 @@ covid_daty$week_year <- factor(covid_daty$week_year, levels = covid_daty$week_ye
 
 #NOTE temporarily removed first column, can rename later if needed, and added zero row for spotify week 7, can add later
 comb_data <- dplyr::bind_cols(rbind(dataAll[-1], 0), covid_daty)
+
+
 ```
 
 <!-- Code for dashboard -->
@@ -350,7 +352,7 @@ p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min
   
   scale_y_continuous(
     
-    name = "Number of Admitted or Hospitalized",
+    name = "Number of Admitted or Hospitalized \n Number of Streams of top track (*1,000)",
     
     # Add a second axis and specify its features
     sec.axis = sec_axis(trans = ~ . * coeff, name="Number of Streams of Top 1 track")
@@ -400,14 +402,41 @@ ggplotly(p)
 
 #### The first case
 On February 27th, 2020 (week 9), the first case of COVID-19 had been confirmed in the Netherlands.
-Before this case, when everything was normal, the number of streams of the top songs decreased untill the end of the holiday season. Probably due people coming together to enjoy (the holiday) music, movies or other activities together, instead of individually. In the first few weeks of 2021 the number of streams started rising again.  
+Before this occurrence, when everything was normal, the number of streams of the top songs decreased until the end of the holiday season. Probably due people coming together to enjoy (the holiday) music, movies or other activities together, instead of individually. In the first few weeks of 2021 the number of streams started rising again.  
 
 From week 5 the number of top streams started to decline. And even When the first cases, the first admissions into the hospitals, and first deaths were reported the number continued to decline.
 
 #### Togetherness and solidariy during lockdown
 As the situation became more severe, with record COVID-related hostpital admissions in week 13, the Dutch government implemented the 'intelligent' lockdown. This led to a relative high public solidarity towards those affected by the virus, especially health care workers. This may explain the sudden spike of the top stream from 1,598,458 to 3,482,822 streams in two weeks, with the song 17 Miljoen Mensen - Live @538 in Ahoy - Davina Michelle topping the charts for five consecutive weeks. 17 Miljoen Mensen (17 Million people) [was dedicated to the Dutch people who are affected by the virus](https://www.ad.nl/show/davina-michelle-en-snelle-brengen-17-miljoen-mensen-uit~a9bdeb0e). 
 
+
 <!-- Frame 4 -->
+
+### Early Christmas: All I Want before Christmas... Is Christmas
+
+```{r, echo = FALSE}
+# p <- ggplot(data2020, aes(mean_valence, mean_energy, size = mean_dance, color = mean_tempo, label = week_year))
+# 
+# ggplotly(p + geom_point())
+
+z <- comb_data %>%
+  filter(year...26 %in% c(2019, 2020)) %>%
+  filter(week %in% c(45:53))
+
+p <- ggplot(z, aes(mean_valence, mean_energy, size = mean_dance, color = mean_tempo, label = week_year)) +
+  geom_point() +
+  facet_grid(. ~ year...26)
+
+ggplotly(p)
+  
+
+```
+
+***
+
+Christmas songs started to dominate the charts in 2020 around week 49 until week 53, whereas in 2019 Christmas this phenomenon occurred much later. In 2020 it is noticable that the bottom corner with tracks with relatively high BPM, high valence, and low energy are from the weeks when Christmas tracks dominated the charts. In 2019 this noticeable in week 52 and to a lesser extent weeks 50 and 51. 
+
+<!-- Frame 5 -->
 
 ### 17 Miljoen Mensen - 15 Miljoen Mensen
 
@@ -457,13 +486,16 @@ compmus_long_distance(
 
 ***
 
-"17 Miljoen Mensen" (2021) is actually a cover of the track "15 Miljoen Mensen" (1996), we'll analyze if there are any similarites between the two tracks. One difference that is noticed instantly is the population increase of 2 million people.
+"17 Miljoen Mensen" (2021) is actually a cover of the track "15 Miljoen Mensen" (1996), we'll analyze if there are any similarites (or lack thereof) between the two tracks. 
+One instantly noticed difference is the adjustment in the track's title for the population increase of 2 million people.
+
+The Chromagram and table below show that there significant differences between the two tracks.
 
 `r knitr::kable(miljoen)`
 
-<!-- Frame 5 -->
+<!-- Frame 6 -->
 
-### Frame 5?
+### Frame 6
 
 ```{r, echo = FALSE}
 p <- ggplot(data2020, aes(mean_valence, mean_energy, size = mean_dance, color = mean_tempo, label = week_year))
