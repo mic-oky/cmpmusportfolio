@@ -7,7 +7,10 @@ output:
   flexdashboard::flex_dashboard:
     storyboard: true
     #theme: darkly
-    theme: cosmo
+    theme: flatly
+    vertical layout: fill
+    logo: icons/logoMO.png
+    favicon: icons/logoMOB.png
 #runtime: shiny
 ---
 
@@ -23,6 +26,124 @@ library(plotly)
 library(reshape2)
 library(crosstalk)
 library(d3scatter)
+library(grid)
+library(gridExtra)
+library(ggrepel)
+library(htmlwidgets)
+library(slickR)
+library(svglite)
+library(DT)
+
+library(flexdashboard)
+library(shinydashboard)
+library(shiny)
+```
+
+```{css style, echo = FALSE}
+.navbar-inverse {
+    background-color: rgba(29, 185, 84, 1);
+    #background-color: #1a242f;
+    border-color: transparent;
+}
+
+.section.sidebar {
+  top: 60px;
+  background-color: rgba(29, 185, 84, 1);
+}
+
+.bg-success {
+  background-color: rgba(29, 185, 84, 1);
+}
+
+.bg-primary {
+  background-color: rgba(191, 191, 191, 0.7);
+}
+
+.storyboard-nav .sbframelist { 
+  overflow : scroll; 
+}
+
+.storyboard-nav .sbframelist ul li {
+  transition: 0.3s;
+}
+
+.storyboard-nav .sbframelist ul li.active {
+  transition: 0.3s;
+}
+
+.storyboard-nav .sbframelist ul li.active {
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(29, 185, 84, 0.8);
+  background-image: url('icons/COVIDW/COVID-19.png');
+  background-repeat: no-repeat;
+  background-position: 130% -310%;
+  background-size: auto;
+  background-blend-mode: soft-light;
+}
+
+
+
+.storyboard-nav .sbframelist ul li:hover {
+  background-color: rgba(47, 71, 79, 0.7) !important;
+  color: white;
+}
+
+.storyboard-nav .sbframelist ul li.active:hover {
+  #background-color: rgba(44, 62, 80, 0.7);
+  #background-color: #3e8e41;
+  background-color: rgba(29, 185, 84, 1) !important;
+  color: white;
+  #background-image: url('icons/COVIDW/COVID-19.png');
+  background-image: url('icons/COVIDB/COVID-19.png');
+  background-repeat: no-repeat;
+  background-position: 130% -310%;
+  background-size: auto;
+  background-blend-mode: soft-light;
+}
+
+
+# tabBox
+
+.nav-tabs-custom > .nav-tabs > li.active {
+    background-color: rgba(29, 185, 84, 1) !important;
+    color: #fff;
+    # font-weight: 300;
+    # font-size: 14px;
+    # border-radius: 0;
+    # padding: 3px 10px 5px;
+    # text-transform: none;
+
+.nav-tabs-custom > .nav-tabs > li:hover > a {
+    background-color: rgba(47, 71, 79, 0.7) !important;
+    color: #fff;
+    # font-weight: 300;
+    # font-size: 14px;
+    # border-radius: 0;
+    # padding: 3px 10px 5px;
+    # text-transform: none;
+}
+
+.nav-tabs-custom > .nav-tabs > li.active > a {
+    background-color: rgba(29, 185, 84, 0.7) !important;
+    color: #fff;
+    # font-weight: 300;
+    # font-size: 14px;
+    # border-radius: 0;
+    # padding: 3px 10px 5px;
+    # text-transform: none;
+}
+
+.nav-tabs-custom > .nav-tabs > li.active:hover > a {
+    background-color: rgba(29, 185, 84, 1) !important;
+    color: #fff;
+    # font-weight: 300;
+    # font-size: 14px;
+    # border-radius: 0;
+    # padding: 3px 10px 5px;
+    # text-transform: none;
+}
+
+
 ```
 
 <!-- Code for corpus -->
@@ -35,7 +156,8 @@ files <- list.files(path="csvPlaylists/", pattern="week+.*csv")
 weeks <- substr(files,1,nchar(files)-4)
 featuresweeks <- paste0("features", substr(files,1,nchar(files)-4))
 
-#Load all files in a loop using weeks data frame 
+#Load all files in a loop using weeks data frame. 
+#(I wish I new about purrr a little bit earlier... but this gets the job done)
 for(i in weeks){
     filepath <- file.path("csvPlaylists",paste(i,".csv",sep=""))
     #assign csv to variable df
@@ -55,7 +177,7 @@ for(i in weeks){
     #Select first 50 values (Top 50) of df 
     df <- head(df,50)
     
-    #Loop-in-loop: for each week in df
+    #Loop-in-loop: for each week in df #Nested-loop: code takes a long time to run (again purrr...)
     for(j in df){
         #Set variables to correct datatype
         df$Position <- as.integer(as.character(df$Position))
@@ -264,67 +386,342 @@ covid_daty$week_year <- factor(covid_daty$week_year, levels = covid_daty$week_ye
 
 ```{r Combining Datasets, include = FALSE}
 
-#NOTE temporarily removed first column, can rename later if needed, and added zero row for spotify week 7, can add later
+#NOTE temporarily removed first column (weekXX), can rename later if needed, and added zero row for spotify week 7, will add later
+#NOTE2 first column not very necessary as week_year and week are present already
 comb_data <- dplyr::bind_cols(rbind(dataAll[-1], 0), covid_daty)
 
+# counting top_tracks weeks on number 1 spot
+#toptraxweekly <- as.data.frame((comb_data$top_track$week_year) , stringsAsFactors = F)
+toptraxweekly <- as.data.frame((comb_data %>% select(top_track, week_year, max_streams)) , stringsAsFactors = F)
+toptraxcount <- comb_data %>% count(top_track)
+toptraxtotstreams <- comb_data %>% group_by(top_track) %>% summarise(tot_streams = sum(max_streams))
+traxjoin <- left_join(toptraxweekly, toptraxcount)
+traxjoin <- left_join(traxjoin, toptraxtotstreams)
 
+comb_data_trax <- left_join(comb_data, traxjoin)
 ```
 
 <!-- Code for dashboard -->
 
-<!-- Page 1 (additional pages optional can add extra frames) -->
-<!-- Frame 1 -->
+<!-- Page 1 (additional pages (optional) can add extra frames) -->
 
-### Did Spotify users in the Netherlands change their listening behavior during the COVID-19 pandemic?
+<!-- Frame 7 -->
 
-#### **Computational Musicology Portfolio**
+### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>7. Self-Similarity Matrix: "Dance Monkey" **Shows repeating pattern and noticeably distinct Millennial Whoop**
+```{r, include = FALSE}
+dancemonkey <-
+  get_tidy_audio_analysis("1rgnBhdG2JDFTbYkYRZAku") %>% # Change URI.
+  compmus_align(bars, segments) %>%                     # Change `bars`
+  select(bars) %>%                                      #   in all three
+  unnest(bars) %>%                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+        compmus_summarise, timbre,
+        method = "mean", norm = "euclidean"              # Change summary & norm.
+      )
+  )
+```
 
-For the assignment for the course 'Computational Musicology' a portfolio will be created in order to perform various analyses relating to music.
-This portfolio will mainly focus on music listening behavior of Spotify in the Netherlands before and during the COVID-19 pandemic. Specifically, whether music preferences have shifted during the pandemic and whether changes can be identified to the restrictions imposed by the Dutch government (e.g. lockdown and curfew).
 
-**Corpus**
+```{r, include = FALSE}
+# Cepstrogram
+cep <- dancemonkey %>%
+  compmus_gather_timbre() %>%
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = basis,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "Dance Monkey - Tones And I", subtitle = "Cepstrogram: Timbre") +
+  scale_fill_viridis_c() +                              
+  theme_classic()
+```
 
-In order to analyze general listening behavior, the corpus will be focused on the following variables:
+```{r, include = FALSE}
+# Self-Similarity Matrix Pitch
+ssm_p <- dancemonkey %>%
+  compmus_self_similarity(pitches, "cosine") %>% 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "Time (s)", y = "Time (s)", subtitle = "SSM: Pitch")
+```
 
-* Playlist
-* Spotify Audio Features
-* Time
-
-**Playlist**
-
-In order to keep track on the average listening behavior of Dutch Spotify users, the weekly ‘Top 50’ and ‘Viral 50’ playlists from the Netherlands will be analyzed over time.
-
-**Spotify Audio Features**
-
-The changes (or lack thereof) listening behavior will be measured by the the different Audio Features from the Spotify API.
-
-**Time**
-
-The variable time will be used to identify periods before and during the pandemic that may explain the change of musical preferences as shown in the top and viral playlists. As well as to help compare annual periods such as the December Holiday season before and during the pandemic.
-
-<!-- Frame 2 -->
-
-### Trip down memory lane: What was life like before the pandemic?
+```{r, include = FALSE}
+# Self-Similarity Matrix Timbre
+ssm_t <- dancemonkey %>%
+  compmus_self_similarity(timbre, "euclidean") %>% 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "Time (s)", y = "", subtitle = "SSM: Timbre")
+```
 
 ```{r, echo = FALSE}
-shared_2019 <- SharedData$new(data2019)
+grid.arrange(cep, # First row with one plot spanning over 2 columns
+             arrangeGrob(ssm_p, ssm_t, ncol = 2), # Second row with 2 plots in 2 different columns
+             nrow = 2)  
+```
 
-d3scatter(shared_2019, ~mean_dance, ~mean_streams, ~week_year)
+***
+#### Dance Monkey
+"Dance Monkey" by Tones And I was identified to be one of the most popular tracks within the corpus. A structure analysis of this track will shed light on the patterns of the sequences of the track and their relation.
 
-# bscols(
-#   d3scatter(shared_2019, ~mean_valence, ~mean_energy, ~week_year, width = "100%"),
-#   d3scatter(shared_2019, ~mean_dance, ~mean_streams, ~week_year, width = "100%")
-# )
+#### Cepstrogram
+The first plot is a cepstrogram which shows the magnitude of each timbre feature per segment of the track. The feature *c01* is loudness, *c02* is low frequency, *c03* is mid frequencies. *c04* and up is not as straight forward but can be implied by keeping track of changes within a track at specific segments.
+The cepstrogram shows that "Dance Monkey's timbre features are relatively defined by *c01* to *c05*. 
+
+- ***c01* Loudness**: The segments reflect the loudness of the track, this is especially noted during the final chorus (the last part of the track).
+- ***c02* Darkness**: The segments faintly show a higher magnitude when the bassdrum hits. But it is noted much more when it is omitted during the breakdown starting at 150 seconds.
+- ***c03* Mid frequency**: this is shown at about 50 seconds and 165 seconds when there is an omission of higher notes
+- ***c04* Attack**: This is very prevalent at the intro of the track. Perhaps it's the vocal stretch fade in effect.
+- **c05* ?**: It has the highest magnitude at around 150 seconds, noticeable is the loudness of the "[Millenial Whoop](https://en.wikipedia.org/wiki/Millennial_whoop)".
+
+#### Self Similarity
+The second and third plots are Self Similarity Matrices (SSM); the first being pitch, and the second timbre.
+These plots show the structure of a track by denoting patterns of similarities that reoccur.
+Diagonal lines and a checkerboard pattern show similarity and repetition.
+
+The timbre SSM is plotted using euclidean norm, euclidean distance and summarized by mean.
+The 45 degree diagonal line is expected because the track is plotted against itself. The plot shows a faint checkerboard pattern which implies some form of repetition in the track. At the 150 second mark there is a significant timbre difference. This is when the breakdown happens with the earlier mentioned "Millenial Whoop".
+
+The pitch SSM is plotted using euclidean norm, cosine distance and summarized by root mean square.
+This plot shows a more noticeable checkerboard pattern and also at the 150 second mark the plot show a signigficant change.
+
+<!-- Frame 4 -->
+
+### `r shiny::icon("exclamation-triangle")` ***NEW!*** <br>4. Top streamed tracks: Consistent hits and one hit wonders. **Difficult to classify most popular song**<br>*Note: tentative*
+
+```{r, echo = FALSE}
+require(flexdashboard)
+require(shinydashboard)
+require(shiny)
+
+top_tot_streams <- distinct(
+  traxjoin %>% group_by(top_track) %>% 
+    summarize(tot_streams, 
+              number_weeks_top1 = n,
+              avg_topstream_topweek = tot_streams/n) %>% 
+    arrange(desc(tot_streams))
+  )
+
+top_table <- datatable(top_tot_streams)
+
+p_t <- ggplot(comb_data_trax, aes(x = max_streams, y = fct_rev(week_year), label = factor(paste(top_track, "|", n,
+                                                                                         "weeks")))) +
+  #geom_count(aes(size = n), group = 1, stat = "identity") +
+  geom_text(aes(color = factor(top_track))) + 
+  #geom_text(aes(color = n)) +
+  #geom_text(aes(label = paste(top_track, n))) +
+  #geom_line(aes(x = max_streams, y = fct_rev(week_year)), alpha = 0.05, group = 1, size = comb_data_trax$n) +
+  geom_point(alpha = 0.2) + 
+  theme_light()   
+  #scale_color_viridis_d()
+  #scale_color_viridis_c()
+
+
+tabBox(width=NULL,
+       height = 1000,
+       title = tagList(shiny::icon("virus"),shiny::icon("spotify"),"Top Tracks"),
+       id = "tabset2",
+       tabPanel("Top Streams", top_table),
+       tabPanel("Top 1 Tracks per week", ggplotly(p_t, width = 1450, height = 680)))
 
 ```
 
 ***
 
-Some text...
+In the corpus there are a total of 20 distinct tracks topping that charts in a span of 68 weeks. On average a Top 1 track remains for `r mean(top_tot_streams$number_weeks_top1)` weeks on the number 1 spot, while streamed `r mean(top_tot_streams$tot_streams)` times, and is streamed `r mean(top_tot_streams$avg_topstream_topweek)` times per week on the Top 1 spot.
+
+This gives an interesting insight to the weekly most popular songs in this corpus. But how do we define which song *is the most popular*? Since the corpus is time constrained, just considering the number of streams might not show the full picture. Therefore, three variables are considered:
+
+1. Total number of streams while on Top 
+2. Number of weeks on Top
+3. Average streams while on Top per week on Top
+
+The most popular song according to variable 1 is "Dance Monkey" by Tones And I, with a total of 15,872,577 streams while the track was at the top spot. The other variables (v2 = 8 weeks | v3 = 1,984,072 per week) show that the track performs above average, and can be indeed considered popular.
+
+According to variable 2, "Mood (feat. iann dior)" by 24kGoldn is the most popular track, topping the charts for a total of 9 weeks. The other variables (v1 = 15,498,940 | v3 = 1,722,104 per week) shows that the track is significantly popular under v1, but barely underperforms under v3.
+
+And variable 3 shows "Tigers" by Bilal Wahib has the most the most average streams per week with 2,652,339 streams while at the top spot. The track underperforms on the other variables (v1 = 5,304,679 | v2 = 2 weeks), as the song scores below average on both number of weeks at the top spot and total streams. This song can be considered a viral hit or more harshly a "one hit wonder" lasting two weeks.
+
+There is a limitation in this approach, since only the number one spots are considered. For a clearer picture of the top tracks from the Top 50, a wider range is recommended. The tracks "Dance Monkey" and "Mood" performed quite similarly. Even under constraints it remains difficult to denote which song is the most popular.
+
+<!-- Frame 1 -->
+
+### 1. **Did Spotify users in the Netherlands change their music listening behavior during the COVID-19 pandemic?**
+
+#### **Computational Musicology Portfolio**
+
+The COVID-19 pandemic has stirred society up by quite large margin. Many people are directly or indirectly affected by the health crisis or the resulting governmental measures in some form or another. This has caused society to adjust, namely in social distancing and isolation. Demanding society to change we communicate, work and more aspects of daily life. This dashboard will focus on the effects of the pandemic on the music listening behavior of Spotify users in the Netherlands, and will explore the main question below.
+
+> Did Spotify users in the Netherlands change their music listening behavior during the COVID-19 pandemic?
+
+A corpus consisting of different portfolio's has been be created to perform various analyses using the Spotify API. 
+This portfolio will mainly on focus on the music listening behavior of Spotify users in the Netherlands before and during the COVID-19 pandemic, as measured by the Spotify API. In addition, specific events on specific times will be highlighted in order to find out to what extent changes in listening behavior can be attributed to certain government imposed measures (e.g. lockdown and curfew).
+
+**Corpus**
+
+In order to analyze general listening behavior, the most important variables for the analyses are:
+
+- Playlist
+- Spotify Audio Features
+- Time
+- [COVID-19 variables provided by RIVM (The Dutch National Institute for Public Health and the Environment)](https://data.rivm.nl/covid-19/)
+
+**Playlist**
+
+In order to keep track on the average listening behavior of Dutch Spotify users, the weekly ‘Top 50’ and ‘Viral 50’ playlists from the Netherlands will be analyzed over time. The year 2019 will be measured from week 45, the year 2020 in its entirety, and 2021 is measured until week 7.
+
+Thus,<br>
+2019 contains 8 playlists consisting of 50 observations (tracks)<br>
+2020 contains 53 playlists consisting of 50 observations (tracks)<br>
+2021 contains 7 playlists consisting of 50 observations (tracks)
+
+Since Spotify autoupdates their playlists, the historical 'Top 50' lists in the form of CSV files will be retrieved from [Spotify Charts](https://spotifycharts.com/regional/nl/weekly/latest).
+
+**Spotify Audio Features**
+
+The changes of (or lack thereof) listening behavior will be measured by the the different Audio Features provided by the Spotify API. The Spotify Audio Features consists of the following features:
+
+- danceability
+- energy
+- key
+- loudness
+- mode
+- speechiness
+- acousticness
+- instrumentalness
+- liveness
+- valence
+- tempo
+- duration_ms
+
+Also the following features obtained through the Spotify API will be analyzed:
+
+- Number of streams
+- Position
+- Track Name
+- Artist
+- Streams
+
+For each weekly playlist, the mean of each variable of the 50 tracks will be calculated, as well as highlighting  outliers in the dataset.
+
+**Time**
+
+The variable time will be used to identify the different weeks as well as the periods before and during the pandemic that may explain the changes in music listening behavior from the top and viral playlists. In addition interesting annual periods will be isolated to see if similar patterns reoccur during the pandemic.For example, the December Holiday season before and during the pandemic will be analyzed to identify whether Spotify users altered their Christmas related listening behavior.
+
+- Week
+- Year
+
+**COVID-19 variables**
+
+Alongside the musical analyses the statistics concerning COVID-19 will be taken into account. The data is provided by the The Dutch National Institute for Public Health and the Environment (RIVM). The data has been pre-processed to include weekly and cumulative data. The variables that are included in this dashboard are the following variables:
+
+- Hospital Admissions
+- Number of deaths
+- Reported cases of COVID-19
+
+
+
+<!-- Frame 2 -->
+
+### 2. A trip down memory lane:<br>**What was life like before the pandemic?**<br><br>*Note: revision/tentative*
+
+```{r, echo = FALSE}
+all2019f = list()
+all2019 = list()
+
+for(m in sorted_fweeks2019){
+    datm <- get(m) %>%
+        summarize(danceability,energy,key,loudness,mode,speechiness,acousticness,instrumentalness,
+                  liveness,valence,tempo,duration_minute = duration_ms/1000/60, year, week = as.factor(week),
+                  mean_dance = mean(danceability),
+                  mean_energy = mean(energy),
+                  mean_key = mean(key),
+                  mean_loudness = mean(loudness),
+                  mean_mode = mean(mode),
+                  mean_speechiness = mean(speechiness),
+                  mean_acousticness = mean(acousticness),
+                  mean_instrumentalness = mean(instrumentalness),
+                  mean_liveness = mean(liveness),
+                  mean_valence = mean(valence),
+                  mean_tempo = mean(tempo),
+                  mean_duration_minute = mean(duration_ms/1000/60))
+    all2019f[[m]] <- datm
+}
+
+for(o in sorted_weeks2019){
+    dat <- get(o) %>%
+        summarize(Position, Streams, `Track Name`, Artist, Streams, year, week,
+                  mean_streams = mean(Streams),
+                  min_streams = min(Streams),
+                  max_streams = max(Streams),
+                  top_track = head(paste(`Track Name`,"-" , Artist), 1)
+                  )
+    all2019[[o]] <- dat
+}
+
+
+big_all2019f <- dplyr::bind_rows(all2019f)
+big_all2019 <- dplyr::bind_rows(all2019)
+
+join_big2019 <- dplyr::bind_cols(big_all2019f, big_all2019)
+
+#big_all2019 = do.call(rbind, all2019)
+
+
+sd <- SharedData$new(join_big2019)
+fls <- filter_slider("ps", "Position", sd, "Position", step = 1)
+flc <- filter_checkbox(id = "wk", label = "Week", sharedData = sd, group = ~week...14)
+
+p1 <- ggplot(sd, aes(x = valence, y = energy, colour = week...14, label = `Track Name`, label2 = Artist)) + geom_point() + theme_light() 
+p2 <- ggplot(sd, aes(x = week...14, y = energy, colour = week...14, label = `Track Name`, label2 = Artist)) + geom_point() + labs(x = "week") + theme_light()
+
+bscols(widths = c(2,5,5),
+       list(fls,
+            flc),
+  ggplotly(p1),
+  ggplotly(p2)
+)
+
+```
 
 <!-- Frame 3 -->
 
-### Covid-19: Visualized
+### 3. **Covid-19 & Music trends**: Music trends show periodical listening pattern
 
 ```{r, echo = FALSE}
 # Convert df to Long format => ggplot to allow multiple variables in plot
@@ -334,7 +731,7 @@ Some text...
 
 # covid_daty.long <- melt(covid_daty, id.vars = c("week", "year", "week_year"), measure.vars = c("deceased", "hospital_admission"))
 
-comb_data.long <- melt(comb_data, id.vars = c("week", "year...13", "week_year", "max_streams", "min_streams", "top_track"), measure.vars = c("deceased", "hospital_admission"))
+comb_data.long <- melt(comb_data, id.vars = c("week", "year...13", "week_year", "max_streams", "min_streams", "mean_streams", "top_track"), measure.vars = c("deceased", "hospital_admission"))
 
 #p <- ggplot(covid_daty.long, aes(year, value, fill = variable)) + geom_bar(stat = "identity", position = "dodge") + #theme(axis.text.x, element_text(angle = 90, vjust = 0.5, hjust=1))
 
@@ -347,112 +744,105 @@ coeff <- 1000
 
 #p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min_streams, label3 = top_track)) +
 
+# p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min_streams, label3 = top_track)) +
+#   geom_point(aes(y = max_streams/coeff, color = max_streams), stat = "identity") +
+#   geom_bar(aes(y = value, fill = variable), stat = "identity", position = "dodge")+ 
+
+
 p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min_streams, label3 = top_track)) +
-  geom_point(aes(y = max_streams/coeff, color = max_streams), stat = "identity") +
-  geom_bar(aes(y = value, fill = variable), stat = "identity", position = "dodge")+ 
+  geom_line(aes(x = factor(week_year), y = max_streams/coeff, group = 1, fill = "Streams Top track"), alpha = 0.4) +
+  geom_point(aes(y = max_streams/coeff)) +
+  geom_line(aes(x = factor(week_year), y = mean_streams/coeff, group = 1, fill = "Average Streams of Top 50"), alpha = 0.4) +
+  geom_point(aes(y = mean_streams/coeff)) +
+  geom_bar(aes(y = value, fill = variable), stat = "identity") +
+  geom_vline(xintercept = 21, linetype="dotted", size = 0.5, alpha = 0.5) +
+    annotate("text", label = "Intelligent\nLockdown", x = 19, y = 4000, size = 3) +
+
+  geom_vline(xintercept = 50, linetype="dotted", size = 0.5, alpha = 0.5) +
+    annotate("text", label = "Partial\nLockdown", x = 48, y = 4000, size = 3) +
+
+  geom_vline(xintercept = 59, linetype="dotted", size = 0.5, alpha = 0.5) +
+    annotate("text", label = "Hard\nLockdown", x = 57, y = 4000, size = 3) +
+
+  geom_vline(xintercept = 63, linetype="dotted", size = 0.5, alpha = 0.5) +
+    annotate("text", label = "Curfew", x = 61, y = 4000, size = 3) +
+
+  
+  # Show top track label in plot
+  #geom_text(aes(y = max_streams/coeff, label =  top_track), angle = 90 , check_overlap = TRUE) +
+  
+  #Using scale_color_manual results in crazy legend 
+  scale_fill_manual(name = "Variables", values = c("Streams Top track" = "black", 
+                                                   "Average Streams of Top 50" = "purple")) +
+  #scale_color_manual(name = "Variables", values = c("Streams Top track" = "black")) +
   
   scale_y_continuous(
     
-    name = "Number of Admitted or Hospitalized \n Number of Streams of top track (*1,000)",
+    name = "Number of Hospitalized and Deceased \n Number of Streams: Average & Top 1 Track  (*1,000)",
     
     # Add a second axis and specify its features
-    sec.axis = sec_axis(trans = ~ . * coeff, name="Number of Streams of Top 1 track")
+    #sec.axis = sec_axis(trans = ~ . * coeff, name="Number of Streams of Top 1 track")
   )+
+  
+  scale_fill_viridis_d(
+    begin = 0.5,
+    end = 1,
+    option = "D",
+    alpha = 0.75,
+    guide = NULL,
+    direction = -1
+    ) +
+  
+  #geom_vline(xintercept = 21, linetype="dotted", size=1.5) +
+  
+  # scale_fill_brewer(palette = "BuGn") +
+  
+  theme_light() +
+  labs(
+    x = "Week, Year",
+    title = "Spotify and Covid trends",
+    subtitle = "Trends from 2019"
+  ) +
 
   theme(axis.title.y = element_text(size=13),
         axis.title.y.right = element_text(size=13),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-ggplotly(p)
 
 
-```
+#ggplotly(p)
 
-```{r}
-# coeff <- 10
-# 
-# # A few constants
-# temperatureColor <- "#69b3a2"
-# priceColor <- rgb(0.2, 0.6, 0.9, 1)
-# 
-# ggplot(head(data, 80), aes(x=day)) +
-#   
-#   geom_bar( aes(y=temperature), stat="identity", size=.1, fill=temperatureColor, color="black", alpha=.4) + 
-#   geom_line( aes(y=price / coeff), size=2, color=priceColor) +
-#   
-#   scale_y_continuous(
-#     
-#     # Features of the first axis
-#     name = "Temperature (Celsius °)",
-#     
-#     # Add a second axis and specify its features
-#     sec.axis = sec_axis(~.*coeff, name="Price ($)")
-#   ) + 
-#   
-#   theme_ipsum() +
-# 
-#   theme(
-#     axis.title.y = element_text(color = temperatureColor, size=13),
-#     axis.title.y.right = element_text(color = priceColor, size=13)
-#   ) +
-# 
-#   ggtitle("Temperature down, price up")
+ggplotly(p, dynamicTicks = TRUE) %>% rangeslider(start = "45_2019", end = "7_2021")
+
+
 ```
 
 ***
 
-#### The first case
+#### The first case(s)
 On February 27th, 2020 (week 9), the first case of COVID-19 had been confirmed in the Netherlands.
 Before this occurrence, when everything was normal, the number of streams of the top songs decreased until the end of the holiday season. Probably due people coming together to enjoy (the holiday) music, movies or other activities together, instead of individually. In the first few weeks of 2021 the number of streams started rising again.  
 
 From week 5 the number of top streams started to decline. And even When the first cases, the first admissions into the hospitals, and first deaths were reported the number continued to decline.
 
 #### Togetherness and solidariy during lockdown
-As the situation became more severe, with record COVID-related hostpital admissions in week 13, the Dutch government implemented the 'intelligent' lockdown. This led to a relative high public solidarity towards those affected by the virus, especially health care workers. This may explain the sudden spike of the top stream from 1,598,458 to 3,482,822 streams in two weeks, with the song 17 Miljoen Mensen - Live @538 in Ahoy - Davina Michelle topping the charts for five consecutive weeks. 17 Miljoen Mensen (17 Million people) [was dedicated to the Dutch people who are affected by the virus](https://www.ad.nl/show/davina-michelle-en-snelle-brengen-17-miljoen-mensen-uit~a9bdeb0e). 
+As the situation became more severe, with record COVID-related hostpital admissions in week 13, the [Dutch government implemented the 'intelligent' lockdown](https://en.wikipedia.org/wiki/COVID-19_pandemic_in_the_Netherlands) (dotted vertical line). This led to a relative high public solidarity towards those affected by the virus, especially essential workers. This may explain the sudden spike of the top stream from 1,598,458 to a record 3,482,822 streams within two weeks, with the song 17 Miljoen Mensen - Live @538 in Ahoy by Davina Michelle topping the charts for five consecutive weeks. 17 Miljoen Mensen (17 Million people) [was dedicated to the people affected by the virus](https://www.ad.nl/show/davina-michelle-en-snelle-brengen-17-miljoen-mensen-uit~a9bdeb0e). So this spike is most likely related to the virus and its effects.
 
-<!-- Frame 4 -->
 
-### Early Christmas: All I Want before Christmas... Is Christmas
 
-```{r, echo = FALSE}
-# p <- ggplot(data2020, aes(mean_valence, mean_energy, size = mean_dance, color = mean_tempo, label = week_year))
-# 
-# ggplotly(p + geom_point())
-
-z <- comb_data %>%
-  filter(year...26 %in% c(2019, 2020)) %>%
-  filter(week %in% c(45:53))
-
-p <- ggplot(z, aes(mean_valence, mean_energy, size = mean_dance, color = mean_tempo, label = week_year, label2 = top_track)) +
-  geom_point() +
-  facet_grid(. ~ year...26)
-
-ggplotly(p)
-  
-
-```
-
-***
-
-Christmas songs started to dominate the charts in 2020 around week 49 until week 53, whereas in 2019 Christmas this phenomenon occurred much later. In 2020 it is noticable that the bottom corner with tracks with relatively high BPM, high valence, and low energy are from the weeks when Christmas tracks dominated the charts. In 2019 this phenomenon is very noticeable in week 52, but shows that Christmas started in week 50. Also in 2020, the charts kept their similarity during the holiday period, whereas in 2019, it suddenly shot up (or downwards in the plot) in week 52.
-
-Interestingly Mariah Carey's 'All I Want for Christmas' topped the charts for four consecutive weeks in 2020, as opposed to 1 week in 2019.
-
-A Possible explanation is that due to the imposed lockdown and other restrictions, people may have felt a need or desire for the "Christmas Spirit" or "Christmas Vibes" a week earlier than in 2019.
-
-Another interesting discovery is that similar in 2019 the top streams in 2020 decreased in similar fashion. A possible explanation is that people disregarded the lockdown regulations and spent the holiday season with friend and/or family. Another is that people we're occupied with other activities to keep in touch with their friends and family.
 
 <!-- Frame 5 -->
 
-### 17 Miljoen Mensen - 15 Miljoen Mensen
+### 5. 17 Miljoen Mensen vs. 15 Miljoen Mensen - The prominent cover song during the pandemic shows **little similarity with original** {data-commentary-width="50%"}
 
-```{r, echo = FALSE}
+```{r, include = FALSE}
 ## 17 Miljoen
 miljoen_17 <-
   get_tidy_audio_analysis("7e42rjxCt8tPjglU9VyBcz") %>%
   select(segments) %>%
   unnest(segments) %>%
   select(start, duration, pitches)
+
 miljoen_17f <- get_track_audio_features("7e42rjxCt8tPjglU9VyBcz")
 
 ## 15 Miljoen
@@ -461,18 +851,55 @@ miljoen_15 <-
   select(segments) %>%
   unnest(segments) %>%
   select(start, duration, pitches)
+
 miljoen_15f <- get_track_audio_features("2GBJFvDr62eIX24a3t6pBr")
 
 miljoen_17f <- as.data.frame(t(miljoen_17f))
 miljoen_15f <- as.data.frame(t(miljoen_15f))
+miljoen_f <- cbind(miljoen_17f,miljoen_15f)
+miljoen_f <- miljoen_f[-(12:16),]
+row.names(miljoen_f)[12] <- "duration_sec"
+miljoen_f[12,] <- as.integer(miljoen_f[12,])/1000
 
-miljoen <- cbind(miljoen_17f,miljoen_15f)
+names(miljoen_f) <- c("17 Miljoen Mensen (2021)", "15 Miljoen Mensen (1996)")
 
-compmus_long_distance(
-  miljoen_17 %>% mutate(pitches = map(pitches, compmus_normalise, "euclidean")),
+miljoen_17c <- miljoen_17 %>%
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>%
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "17 Million (2021)") +
+  theme_minimal() +
+  scale_fill_viridis_c()
+
+miljoen_15c <- miljoen_15 %>%
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>%
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "15 Million (1996)") +
+  theme_minimal() +
+  scale_fill_viridis_c()
+
+miljoen_p <- compmus_long_distance(
   miljoen_15 %>% mutate(pitches = map(pitches, compmus_normalise, "euclidean")),
+  miljoen_17 %>% mutate(pitches = map(pitches, compmus_normalise, "euclidean")),
   feature = pitches,
-  method = "euclidean"
+  method = "cosine"
 ) %>%
   ggplot(
     aes(
@@ -485,30 +912,71 @@ compmus_long_distance(
   ) +
   geom_tile() +
   coord_equal() +
-  labs(x = "17 Million 2021", y = "15 Million 1996") +
+  labs(x = "15 Milljoen mensen (1996)", y = "17 Miljoen mensen (2021)") +
   theme_minimal() +
   scale_fill_viridis_c(guide = NULL)
+
+```
+
+```{r Plots, echo = FALSE}
+grid.arrange(miljoen_p, # First row with one plot spanning over 2 columns
+             arrangeGrob(miljoen_17c, miljoen_15c, ncol = 2), # Second row with 2 plots in 2 different columns
+             nrow = 2)  
 ```
 
 ***
 
-"17 Miljoen Mensen" (2021) is actually a cover of the track "15 Miljoen Mensen" (1996), we'll analyze if there are any similarites (or lack thereof) between the two tracks. 
-One instantly noticed difference is the adjustment in the track's title for the population increase of 2 million people.
+The track "17 Miljoen Mensen" (2021) is actually a cover of "15 Miljoen Mensen" (1996), which was released 25 years earlier! An analysis of the chromafeatures of the two tracks made in order to find similarities between them. Instantly noticed differences are 17 Miljoen mensen's title adjustment for the population increase of 2 million people, and its shortness with a duration of just 1 minute and 47 seconds.
 
-The Chromagram and table below show that there significant differences between the two tracks.
+The first plot shows the Dynamic Time Warping of the two tracks, using Euclidean norm and angular distance. A diagonal pattern would denote similarity between the two tracks. This is not observed, which implies significant differences. For instance, the table below shows that pitch classes differ. According to the Spotify API, "17 Miljoen Mensen" is in the key of G major, wheras "15 Miljoen Mensen" is in the key of C major. This is not explicitly shown in the two chromagrams, but the keys do display brief high magnitude of the course of their songs respectively.
 
-`r knitr::kable(miljoen)`
+The tracks do share a   In addition the 'sound and feel' of the tracks differ: 15 miljoen mensen has a higher danceability, energy, and loudness, whereas "17 miljoen mensen" has a much higher acousticness and liveness (due to the recording being a live performance). A remarkable commonality probably explains the differences: Both tracks were unintended single releases, ["15 miljoen mensen" was initially written for a commercial, and "17 Miljoen mensen" as a tribute for a (due to COVID-19) canceled music concert](https://nl.wikipedia.org/wiki/15_miljoen_mensen). The different motivations behind the tracks reflects the different 'sound and feel' as shown by Spotify API.
+
+`r knitr::kable(miljoen_f)`
+
+
 
 <!-- Frame 6 -->
 
-### Frame 6
+### 6. All I Want *be*for*e* Christmas... is Christmas<br>**Earlier Christmas in 2020** due to the lockdown.
 
 ```{r, echo = FALSE}
-p <- ggplot(data2020, aes(mean_valence, mean_energy, size = mean_dance, color = mean_tempo, label = week_year))
+# p <- ggplot(data2020, aes(mean_valence, mean_energy, size = mean_dance, color = mean_tempo, label = week_year))
+# 
+# ggplotly(p + geom_point())
 
-ggplotly(p + geom_point())
+z <- comb_data %>%
+  filter(year...26 %in% c(2019, 2020)) %>%
+  filter(week %in% c(45:53))
+
+p <- ggplot(z, aes(mean_valence, mean_energy, color = mean_tempo, label = week_year, label2 = top_track)) +
+  geom_point(aes(size = mean_dance)) +
+  geom_text(aes(label = week), vjust = 0, nudge_y = 0.003, nudge_x = 0.003) +
+  facet_grid(. ~ year...26)+ 
+  scale_colour_viridis_c(
+    option = "D",
+    alpha = 0.75,
+  ) +
+  theme_light() +
+  labs(
+    x = "Mean Valence",
+    y = "Mean Energy",
+    title = "Audio features per week in 2019 and 2020",
+    subtitle = "Christmas music increases average valence and decreases average energy in Top 50 playlist"
+  )
+
+ggplotly(p)
+  
+
 ```
 
 ***
 
-Some text...
+Christmas songs started to dominate the charts in 2020 around week 49 until week 53, whereas in 2019 Christmas this phenomenon occurred much later. In 2020 it is noticeable that the bottom corner with tracks with relatively high BPM, high valence, low energy and low danceability are from the weeks when Christmas tracks dominated the charts. In 2019 this phenomenon is very noticeable in week 52, but shows that Christmas started in week 50, but less prevalent than in 2020. Also in 2020, the charts remained similar during the holiday period, whereas in 2019, it suddenly shot up (or downwards as shown in the plot) in week 52.
+
+Interestingly, Mariah Carey's 'All I Want for Christmas' topped the charts for four consecutive weeks in 2020, as opposed to 1 week in 2019.
+
+A Possible explanation is that due to the imposed lockdown and other restrictions, people may have felt a need or desire for the "Christmas Spirit" or "Christmas Vibes" a week earlier than in 2019.
+
+Another interesting discovery is that similar in 2019 the top streams in 2020 decreased in similar fashion. A possible explanation is that people disregarded the lockdown regulations and spent the holiday season with friend and/or family. Another is that people we're occupied with other activities to keep in touch with their friends and family.
+
