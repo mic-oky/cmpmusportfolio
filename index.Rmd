@@ -449,7 +449,7 @@ join_big2019 <- dplyr::bind_cols(big_all2019f, big_all2019)
 join_big2020 <- dplyr::bind_cols(big_all2020f, big_all2020)
 join_big2021 <- dplyr::bind_cols(big_all2021f, big_all2021)
 
-corpus <- dplyr::bind_rows(join_big2019,join_big2020,join_big2021)
+corpus_df <- dplyr::bind_rows(join_big2019,join_big2020,join_big2021)
 ```
 
 ```{r COVID-19 dataset, include = FALSE}
@@ -613,7 +613,7 @@ key_templates <-
 
 <!-- Frame 8 -->
 
-### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>8. In the mood for which key?<br>Chord and Key estimations for "Mood"
+### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>8. In the mood for which keys?<br>Chord and Key estimations for "Mood".
 
 ```{r, echo = FALSE}
 
@@ -646,7 +646,7 @@ mk <- mood %>%
 
 mc <- mood %>% 
   compmus_match_pitch_template(
-    chord_templates,         # Change to chord_templates if descired
+    chord_templates,         # Change to chord_templates if desired
     method = "cosine",  # Try different distance metrics
     norm = "euclidean"     # Try different norms
   ) %>%
@@ -675,7 +675,7 @@ A keygram and chordogram are plotted in order to show the tonal progression of t
 
 **Spotify API**
 
-According to the Spotify API, this track is in the 7th key,  with mode 0: meaning G minor.
+According to the [Spotify API](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject), this track is in the 7th key,  with mode 0: meaning G minor.
 
 **Chordify**
 
@@ -691,29 +691,45 @@ G - A - B♭ - C - D - E♭ - F
 
 <!-- Frame 9 -->
 
-<!-- ### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>9. Frame 9 -->
+### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>9. Historgram of Keys in the corpus.
 
 
-<!-- # cps %>% -->
-<!-- #   group_by(year...31) %>% -->
-<!-- #   summarize(key) %>% -->
-<!-- #   mutate(key_key = fct_recode(key, -->
-<!-- #                               0 = "C", -->
-<!-- #                               1 = "C♯", -->
-<!-- #                               2 = "D", -->
-<!-- #                               3 = "D♯", -->
-<!-- #                               4 = "E", -->
-<!-- #                               5 = "F", -->
-<!-- #                               6 = "F♯", -->
-<!-- #                               7 = "G", -->
-<!-- #                               8 = "G♯", -->
-<!-- #                               9 = "A", -->
-<!-- #                               10 = "A♯", -->
-<!-- #                               11 = "B")) + -->
-<!-- #   ggplot(aes(x = key)) + -->
-<!-- #   facet_wrap(~ year...31) + -->
-<!-- #   geom_histogram() -->
+```{r, echo = FALSE}
+# corpus_df %>%
+#   group_by(year...31) %>%
+#   summarize(key, mode) %>%
+#   mutate(key_key = recode_factor(key,
+#                               `0` = "C",
+#                               `1` = "C♯",
+#                               `2` = "D",
+#                               `3` = "D♯",
+#                               `4` = "E",
+#                               `5` = "F",
+#                               `6` = "F♯",
+#                               `7` = "G",
+#                               `8` = "G♯",
+#                               `9` = "A",
+#                               `10` = "A♯",
+#                               `11` = "B")) %>%
+#   ggplot(aes(x = key_key, fill = as.factor(mode))) +
+#   facet_wrap(~ year...31) +
+#   scale_fill_viridis_d(
+#     alpha = 0.7,
+#     begin = 0.6,
+#     end = 0.9,
+#     option = "D"
+#   ) +
+#   theme_light() +
+#   geom_histogram(stat = "count")
 
+knitr::include_graphics("figure/hist.png")
+
+```
+
+***
+
+2020 Contains the most data, in order to make more meaningful comparisons to 2019, more data is required.
+2021 is still in progress, comparisons with the other years are less meaningful.
 
 <!-- Frame 1 -->
 
@@ -848,8 +864,14 @@ sd_19 <- SharedData$new(join_big2019)
 fls <- filter_slider("ps", "Position", sd_19, "Position", step = 1)
 flc <- filter_checkbox(id = "wk", label = "Week", sharedData = sd_19, group = ~week...14, inline = TRUE)
 
-p1 <- ggplot(sd_19, aes(x = valence, y = energy, colour = week...14, label = `Track Name`, label2 = Artist)) + geom_point(aes(size = danceability, alpha = 0.4, fill = week...14)) + theme_light() 
-p2 <- ggplot(sd_19, aes(x = week...14, y = valence, colour = week...14, label = `Track Name`, label2 = Artist)) + geom_point(aes(alpha = 0.4)) + labs(x = "Week") + theme_light()
+p1 <- ggplot(sd_19, aes(x = valence, y = energy, colour = week...14, label = `Track Name`, label2 = Artist)) +
+  geom_point(aes(size = danceability, alpha = 0.4, fill = week...14)) + 
+  theme_light() 
+p2 <- ggplot(sd_19, aes(x = week...14, y = valence, colour = week...14, label = `Track Name`, label2 = Artist)) +
+  geom_point(aes(alpha = 0.9)) + 
+  geom_point(aes(y = mean_valence, alpha = 1)) + 
+  geom_line(aes(x = week...14, y = mean_valence, group = 1)) +
+  labs(x = "Week") + theme_light()
 
 # bscols(widths = c(2,5,5),
 #        list(fls,
@@ -868,6 +890,10 @@ bscols(ggplotly(p1),
 
 `r bscols(list(fls,flc))`
 
+***
+
+
+
 <!-- Frame 3 -->
 
 ### 3. **Covid-19 & Music trends**: Music trends show periodical listening pattern
@@ -882,12 +908,12 @@ coeff <- 1000
 
 
 p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min_streams, label3 = top_track)) +
-  geom_line(aes(x = factor(week_year), y = max_streams/coeff, group = 1),
-            alpha = 0.7, size = 1) +
-  geom_point(aes(y = max_streams/coeff), group = 1) +
-  geom_line(aes(x = factor(week_year), y = mean_streams/coeff, group = 2),
-            alpha = 0.7, size = 1) +
-  geom_point(aes(y = mean_streams/coeff), group = 2, alpha = 0.7) +
+  geom_line(aes(x = factor(week_year), y = max_streams/coeff, group = 1, color = "Streams Top 1 track"),
+            alpha = 0.9, size = 1) +
+  geom_point(aes(y = max_streams/coeff), group = 1, alpha = 0.2, size = 1) +
+  geom_line(aes(x = factor(week_year), y = mean_streams/coeff, group = 2, color = "Average Streams of Top 50"),
+            alpha = 0.9, size = 1) +
+  geom_point(aes(y = mean_streams/coeff), group = 2, alpha = 0.2, size = 1) +
   geom_bar(aes(y = value, fill = variable), stat = "identity") +
   
   geom_vline(xintercept = 21, linetype="dotted", size = 0.5, alpha = 0.5) +
@@ -902,6 +928,8 @@ p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min
   geom_vline(xintercept = 63, linetype="dotted", size = 0.5, alpha = 0.5) +
     annotate("text", label = "Curfew", x = 61, y = 4000, size = 3) +
 
+  scale_color_manual(name = "Variables", values = c("Streams Top 1 track" = "lightblue4",
+                                                    "Average Streams of Top 50" = "purple2")) +
   
   scale_y_continuous(
     
