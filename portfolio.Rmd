@@ -12,7 +12,7 @@ library(tidyverse)
 library(spotifyr)
 ```   
 
-```{r Create Corpus}
+```{r Create Corpus, eval = FALSE, echo = FALSE}
 #Read filenames of csv's
 files <- list.files(path="csvPlaylists/", pattern="week+.*csv")
 
