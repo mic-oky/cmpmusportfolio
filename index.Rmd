@@ -826,7 +826,7 @@ sd_19 <- SharedData$new(join_big2019)
 fls <- filter_slider("ps", "Position", sd_19, "Position", step = 1)
 flc <- filter_checkbox(id = "wk", label = "Week", sharedData = sd_19, group = ~week...14, inline = TRUE)
 
-p1 <- ggplot(sd_19, aes(x = valence, y = energy, colour = week...14, label = `Track Name`, label2 = Artist)) + geom_point(aes(size = danceability, alpha = 0.4, fill = week...14, color = Position)) + theme_light() 
+p1 <- ggplot(sd_19, aes(x = valence, y = energy, colour = week...14, label = `Track Name`, label2 = Artist)) + geom_point(aes(size = danceability, alpha = 0.4, fill = week...14)) + theme_light() 
 p2 <- ggplot(sd_19, aes(x = week...14, y = valence, colour = week...14, label = `Track Name`, label2 = Artist)) + geom_point(aes(alpha = 0.4)) + labs(x = "Week") + theme_light()
 
 # bscols(widths = c(2,5,5),
@@ -844,7 +844,7 @@ bscols(ggplotly(p1),
 
 ***
 
-`r list(fls,flc)`
+`r bscols(list(fls,flc))`
 
 <!-- Frame 3 -->
 
