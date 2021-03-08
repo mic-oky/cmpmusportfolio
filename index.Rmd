@@ -642,7 +642,7 @@ mk <- mood %>%
   geom_tile() +
   scale_fill_viridis_c(guide = "none") +
   theme_minimal() +
-  labs(x = "Time (s)", y = "", title = "Mood (feat. iann dior) -24kGoldn", subtitle = "Key template")
+  labs(x = "Time (s)", y = "", fill = "Magnitude", title = "Mood (feat. iann dior) -24kGoldn", subtitle = "Keygram")
 
 mc <- mood %>% 
   compmus_match_pitch_template(
@@ -656,7 +656,7 @@ mc <- mood %>%
   geom_tile() +
   scale_fill_viridis_c(guide = "none") +
   theme_minimal() +
-  labs(x = "Time (s)", y = "", title = "Mood (feat. iann dior) -24kGoldn", subtitle = "Chord template")
+  labs(x = "Time (s)", y = "", fill = "Magnitude", title = "Mood (feat. iann dior) -24kGoldn", subtitle = "Chordogram")
 
 grid.arrange(
   arrangeGrob(
@@ -665,6 +665,28 @@ grid.arrange(
   nrow = 1)
 
 ```
+
+***
+
+The track *Mood* by 24kGoldn ft. iann diorr is also one of the identified popular tracks in the corpus.
+A keygram and chordogram are plotted in order to show the tonal progression of the track by estimating the chords and key for each segment.
+
+
+
+**Spotify API**
+
+According to the Spotify API, this track is in the 7th key,  with mode 0: meaning G minor.
+
+**Chordify**
+
+The [Chordify algorithm](https://chordify.net/chords/24kgoldn-mood-official-video-ft-iann-dior-24kgoldnvevo) identified the chords the following (4/4) loop:
+
+| E♭ - Gm - | B♭ - F - |
+
+
+The identified key appears to be on the natural scale:
+
+G - A - B♭ - C - D - E♭ - F
 
 
 <!-- Frame 9 -->
@@ -1212,6 +1234,11 @@ ssm_p <- dancemonkey %>%
     )
   ) +
   geom_tile() +
+  geom_vline(xintercept = 50, size=1) +
+  geom_vline(xintercept = 69, size=1, alpha = 0.5) +
+  geom_vline(xintercept = 111, size=1) +
+  geom_vline(xintercept = 147, color = "red", size=1) +
+  geom_vline(xintercept = 167, color = "red", size=1) +
   coord_fixed() +
   scale_fill_viridis_c(guide = "none") +
   theme_classic() +
@@ -1232,6 +1259,11 @@ ssm_t <- dancemonkey %>%
     )
   ) +
   geom_tile() +
+  geom_vline(xintercept = 50, size=1) +
+  geom_vline(xintercept = 69, size=1, alpha = 0.5) +
+  geom_vline(xintercept = 111, size=1) +
+  geom_vline(xintercept = 147, color = "red", size=1) +
+  geom_vline(xintercept = 167, color = "red", size=1) +
   coord_fixed() +
   scale_fill_viridis_c(guide = "none") +
   theme_classic() +
