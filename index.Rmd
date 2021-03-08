@@ -1144,6 +1144,16 @@ ggplotly(p)
 
 ```
 
+***
+
+Christmas songs started to dominate the charts in 2020 around week 49 until week 53, whereas in 2019 Christmas this phenomenon occurred much later. In 2020 it is noticeable that the bottom corner with tracks with relatively high BPM, high valence, low energy and low danceability are from the weeks when Christmas tracks dominated the charts. In 2019 this phenomenon is very noticeable in week 52, but shows that Christmas started in week 50, but less prevalent than in 2020. Also in 2020, the charts remained similar during the holiday period, whereas in 2019, it suddenly shot up (or downwards as shown in the plot) in week 52.
+
+Interestingly, Mariah Carey's 'All I Want for Christmas' topped the charts for four consecutive weeks in 2020, as opposed to 1 week in 2019.
+
+A Possible explanation is that due to the imposed lockdown and other restrictions, people may have felt a need or desire for the "Christmas Spirit" or "Christmas Vibes" a week earlier than in 2019.
+
+Another interesting discovery is that similar in 2019 the top streams in 2020 decreased in similar fashion. A possible explanation is that people disregarded the lockdown regulations and spent the holiday season with friend and/or family. Another is that people we're occupied with other activities to keep in touch with their friends and family.
+
 <!-- Frame 7 -->
 
 ### 7. Self-Similarity Matrix: "Dance Monkey" **Shows repeating pattern and noticeably distinct Millennial Whoop**
@@ -1257,14 +1267,4 @@ The second and third plots are Self Similarity Matrices (SSM); The first being p
 The timbre SSM is plotted using Euclidean norm, Euclidean distance and summarized by the mean. The plot shows a faint checkerboard pattern which implies some form of repetition in the track. At the 150 second mark there is a significant timbre difference. This is when the breakdown occurs with the earlier mentioned “Millenial Whoop”.
 
 The pitch SSM is plotted using Euclidean norm, cosine distance and summarized by root mean square. This plot shows a slightly more noticeable checkerboard pattern. At the 150 second mark, the plot shows a significant change.
-
-***
-
-Christmas songs started to dominate the charts in 2020 around week 49 until week 53, whereas in 2019 Christmas this phenomenon occurred much later. In 2020 it is noticeable that the bottom corner with tracks with relatively high BPM, high valence, low energy and low danceability are from the weeks when Christmas tracks dominated the charts. In 2019 this phenomenon is very noticeable in week 52, but shows that Christmas started in week 50, but less prevalent than in 2020. Also in 2020, the charts remained similar during the holiday period, whereas in 2019, it suddenly shot up (or downwards as shown in the plot) in week 52.
-
-Interestingly, Mariah Carey's 'All I Want for Christmas' topped the charts for four consecutive weeks in 2020, as opposed to 1 week in 2019.
-
-A Possible explanation is that due to the imposed lockdown and other restrictions, people may have felt a need or desire for the "Christmas Spirit" or "Christmas Vibes" a week earlier than in 2019.
-
-Another interesting discovery is that similar in 2019 the top streams in 2020 decreased in similar fashion. A possible explanation is that people disregarded the lockdown regulations and spent the holiday season with friend and/or family. Another is that people we're occupied with other activities to keep in touch with their friends and family.
 
