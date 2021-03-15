@@ -656,7 +656,7 @@ key_templates <-
 
 <!-- Frame 11 -->
 
-### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>11. Most prevalent beats:<br>Tempi around *100 BPM* and *120BPM* most common in corpus.
+### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>11. "Tigers" by Bilal Wahib has a tempo of **112 BPM**
 
 ```{r, include = FALSE, cache = TRUE}
 tiger <- get_tidy_audio_analysis("7jnaow1bGpKO2VkgtYE8Vv")
@@ -696,6 +696,16 @@ slickR(plist, height = "80", width = "80%") + settings
 ```
 
 ***
+
+Another popular track in the corpus is "Tigers" by Bilal Wahib. Tempograms are plotted in order to show the estimated BPM of the track along its duration.
+
+The *tempo* feature of the Spotify API estimates a BPM of 111.943 (rounded 112 BPM).
+
+The first Tempogram doens't explicitly reflect the estimation of the Spotify API, tempi of around 210-220 and 430-450 are shown in the plot. Plot might represent record half-time and quarter time BPM of 224 and 448 based on the estimation of 112 BPM.
+
+The second Tempogram (cyclic), is adjusted to represent the more 'common' tempi humans tap. This plot does reflect the Spotify API estimation of 112 BPM much clearer.
+
+At the 75 second mark, there is a slight drop and increase in tempo is recorded. From this point a tape stop sound effect is immediately followed by the bridge. The BPM however, remains the same (try to tap along).
 
 <!-- Frame 10 -->
 
@@ -760,6 +770,13 @@ ggplotly(p10_1)
 
 ***
 
+The density plot shows that overall the the most frequent tempi within the corpus is around 90-100 BPM and 115-128 BPM.
+The year **2019** showed a strong preference for tracks around **98 BPM** and to a lesser extent **123 BPM**.
+
+The year **2020** showed a strong preference for tracks around both **95 BPM** and **121 BPM**.
+
+The first **7 weeks of 2021** showed a preference for tracks around **99 BPM** and **122 BPM**.
+
 <!-- Frame 1 -->
 
 ### 1. **Did Spotify users in the Netherlands change their music listening behavior during the COVID-19 pandemic?**
@@ -797,7 +814,7 @@ Since Spotify autoupdates their playlists, the historical 'Top 50' lists in the 
 
 The changes of (or lack thereof) listening behavior will be measured by the the different Spotify Audio Features:
 
-<details open>
+<details>
 
 <summary>**▶ Spotify Audio Features:**</summary>
 
@@ -1451,7 +1468,7 @@ mk <- mood %>%
   #scale_fill_viridis_c(guide = "none") +
   scale_fill_viridis_c() +
   theme_minimal() +
-  labs(x = "Time (s)", y = "", fill = "Magnitude", title = "Mood (feat. iann dior) - 24kGoldn", subtitle = "Keygram")
+  labs(x = "Time (s)", y = "", fill = "d", title = "Mood (feat. iann dior) - 24kGoldn", subtitle = "Keygram")
 
 mc <- mood %>% 
   compmus_match_pitch_template(
@@ -1466,7 +1483,7 @@ mc <- mood %>%
   #scale_fill_viridis_c(guide = "none") +
   scale_fill_viridis_c() +
   theme_minimal() +
-  labs(x = "Time (s)", y = "", fill = "Magnitude", title = " ", subtitle = "Chordogram")
+  labs(x = "Time (s)", y = "", fill = "d", title = " ", subtitle = "Chordogram")
 
 grid.arrange(
   arrangeGrob(
@@ -1595,4 +1612,10 @@ tabBox(width=NULL,
 
 ***
 
-The histogram does not show a clear preference of keys, although C♯, F♯, G♯ consistently have a relative high count
+While histogram doesn't show a clear/unanimous preference, the keys **C♯, F♯, G♯** consistently do have a relative high count within the corpus.
+
+In 2019, There is a clear significant higher count of **C♯, F, G, B** key.
+
+In 2020, The keys **C♯, F♯, G♯, B** have a significantly higher frequency in the corpus.
+
+Note that 2021 only contains the first 7 weeks, whereas 2019 and 2020 contain 52 and 53 weeks respectively. Therefore, its not very representative to make the most informed comparisons. 
