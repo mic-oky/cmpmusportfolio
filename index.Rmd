@@ -695,6 +695,13 @@ slickR(plist, height = "80", width = "80%") + settings
 
 ```
 
+```{css}
+.chart-stage .html-widget-static-bound {
+    width: 95% !important;
+    height: 100% !important;
+}
+```
+
 ***
 
 Another popular track in the corpus is "Tigers" by Bilal Wahib. Tempograms are plotted in order to show the estimated BPM of the track along its duration.
