@@ -764,8 +764,20 @@ ggplot(aes(x = tempo, fill = year...31)) +
 
 #knitr::include_graphics("figure/hist.png")
 
+# ply10_1 <- 
+  
 ggplotly(p10_1)
 
+averageBPM <- corpus_df %>%
+  summarize(mean_tempo = mean(tempo))
+
+# vb10 <- flexdashboard::valueBox(round(averageBPM$mean_tempo), icon="fa-music")
+
+# grid.arrange(
+#   arrangeGrob(
+#     ply10_1,
+#     vb10,ncol = 2),
+#   nrow = 1)
 ```
 
 ***
@@ -944,7 +956,7 @@ bscols(ggplotly(p1),
 
 ***
 
-Some text underneath the slider and checkboxes
+A full analysis of the period before the pandemic (2019) will follow when the relevant plots are completed.
 
 <!-- Frame 3 -->
 
@@ -1029,7 +1041,7 @@ p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min
 
 l1 <- list(
   source=base64enc::dataURI(file = "icons/House-lockdown (1).png"),
-  x = 63.5, y = 1, sizex = 3, sizey = 0.05,
+  x = 62.5, y = 1, sizex = 3, sizey = 0.05,
   xref = "x", yref = "paper",
   xanchor = "left", yanchor = "bottom"
   )
@@ -1110,12 +1122,19 @@ p_t <- ggplot(comb_data_trax, aes(x = max_streams, y = fct_rev(week_year), label
   #scale_color_viridis_d()
   #scale_color_viridis_c()
 
+# tabBox(width=NULL,
+#        height = 1000,
+#        title = tagList(shiny::icon("virus"),shiny::icon("spotify"),"Top Tracks"),
+#        id = "tabset2",
+#        tabPanel("Top Streams", top_table),
+#        tabPanel("Top 1 Tracks per week", ggplotly(p_t, width = 1450, height = 725))
+#        )
+
 tabBox(width=NULL,
        height = 1000,
        title = tagList(shiny::icon("virus"),shiny::icon("spotify"),"Top Tracks"),
        id = "tabset2",
-       tabPanel("Top Streams", top_table),
-       tabPanel("Top 1 Tracks per week", ggplotly(p_t, width = 1450, height = 725))
+       tabPanel("Top Streams", top_table)
        )
 
 ```
