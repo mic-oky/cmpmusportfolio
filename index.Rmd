@@ -11,8 +11,13 @@ output:
     #vertical layout: fill
     logo: icons/logoMO.png
     favicon: icons/logoMOB.png
+    source_code: "https://github.com/mic-oky/cmpmusportfolio"
+    target: _blank
+    #social: [ "linkedin" ]
 #runtime: shiny
 ---
+
+<!-- Thanks for stopping by at my Computational Musicology Portfolio! Beware, the code is pretty messy at this point -->
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -41,7 +46,6 @@ library(shiny)
 
 library(patchwork)
 
-# Sys.setlocale("LC_ALL", "Dutch")
 Sys.setlocale(category = "LC_ALL", locale = "English_United States.1252")
 options(scipen = 999, encoding = "UTF-8")
 ```
@@ -656,7 +660,7 @@ key_templates <-
 
 <!-- Frame 11 -->
 
-### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>11. "Tigers" by Bilal Wahib has a tempo of **112 BPM**
+### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>11. *"Tigers"* by Bilal Wahib has a tempo of **112 BPM**
 
 ```{r, include = FALSE, cache = TRUE}
 tiger <- get_tidy_audio_analysis("7jnaow1bGpKO2VkgtYE8Vv")
@@ -706,17 +710,28 @@ slickR(plist, height = "80", width = "80%") + settings
 
 Another popular track in the corpus is "Tigers" by Bilal Wahib. Tempograms are plotted in order to show the estimated BPM of the track along its duration.
 
-The *tempo* feature of the Spotify API estimates a BPM of 111.943 (rounded 112 BPM).
+The *tempo* feature of the Spotify API estimates a **BPM of 111.943** (rounded 112 BPM).
 
-The first Tempogram doens't explicitly reflect the estimation of the Spotify API, tempi of around 210-220 and 430-450 are shown in the plot. Plot might represent record half-time and quarter time BPM of 224 and 448 based on the estimation of 112 BPM.
+The first Tempogram doens't explicitly reflect the estimation of the Spotify API, tempi of around 210-220 and 430-450 are shown in the plot. The plot might record the represent half-time and quarter time BPM's of 224 and 448 (based on the estimation of 112 BPM).
 
-The second Tempogram (cyclic), is adjusted to represent the more 'common' tempi humans tap. This plot does reflect the Spotify API estimation of 112 BPM much clearer.
+The second Tempogram (cyclic), is adjusted to represent the more 'common' tempi at which humans tap. This plot does reflect the Spotify API estimation of 112 BPM more clearly.
 
-At the 75 second mark, there is a slight drop and increase in tempo is recorded. From this point a tape stop sound effect is immediately followed by the bridge. The BPM however, remains the same (try to tap along).
+At the 75 second mark, there is a slight drop and increase in tempo. From this point, noticable is the tape stop sound effect, which is immediately followed by the bridge. The BPM however, remains the same (try to tap along).
+
+***
+
+```{=html}
+<object data="https://open.spotify.com/embed/track/7jnaow1bGpKO2VkgtYE8Vv" width="280" height="140">
+    <embed src="https://open.spotify.com/embed/track/7jnaow1bGpKO2VkgtYE8Vv" width="280" height="140"></embed>
+    Error: Embedded data could not be displayed.
+</object>
+```
+
+
 
 <!-- Frame 10 -->
 
-### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>10. Most prevalent beats:<br>Tempi around *100 BPM* and *120BPM* most common in corpus.
+### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>10. Most prevalent beats:<br>Tempi around **100 BPM** and **120 BPM** most common in corpus.
 
 ```{r, echo = FALSE}
 pc <- corpus_df %>%
@@ -795,6 +810,170 @@ The year **2019** showed a strong preference for tracks around **98 BPM** and to
 The year **2020** showed a strong preference for tracks around both **95 BPM** and **121 BPM**.
 
 The first **7 weeks of 2021** showed a preference for tracks around **99 BPM** and **122 BPM**.
+
+
+***
+
+**Average Tempo:**
+
+```{js, echo = FALSE}
+var divs = ["id2019", "id2020", "id2021"];
+var visibleDivId = null;
+
+function toggleVisibility(divId) {
+  if (visibleDivId === divId) {
+    visibleDivId = null;
+  } else {
+    visibleDivId = divId;
+  }
+
+  hideNonVisibleDivs();
+}
+
+function hideNonVisibleDivs() {
+  var i, divId, div;
+
+  for (i = 0; i < divs.length; i++) {
+    divId = divs[i];
+    div = document.getElementById(divId);
+
+    if (visibleDivId === divId) {
+      div.style.display = "block";
+    } else {
+      div.style.display = "none";
+    }
+  }
+}
+```
+
+```{css, echo = FALSE}
+.btn1 {
+  border: none;
+  background-color: rgba(29, 185, 84, 0.8);
+  padding: 14px 26px;
+  font-size: 16px;
+  cursor: pointer;
+  display: inline-block;
+  color: white;
+  transition: 0.3s;
+}
+
+.btn1:hover {
+  background-color: rgba(29, 185, 84, 0.8);
+  color: white;
+}
+
+.b2019 {
+  color: rgba(44, 62, 80, 1);
+  background-color: #c0c1d7;
+}
+
+.b2020 {
+  color: rgba(44, 62, 80, 1);
+  background-color: #b4ded8;
+}
+
+.b2021 {
+  color: rgba(44, 62, 80, 1);
+  background-color: #e8f4b7;
+}
+
+#id2019 {
+  display: none;
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(192, 193, 215, 0.8) !important;
+  background-image: url('icons/musical-note(B).png');
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+#id2020 {
+  display: none;
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(180, 222, 216, 0.8) !important;
+  background-image: url('icons/musical-note(B).png');
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+#id2021 {
+  display: none;
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(232, 244, 183, 0.8) !important;
+  background-image: url('icons/musical-note(B).png');
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+#box hover
+
+#id2019:hover {
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(192, 193, 215, 1)!important;
+  background-image: url('icons/musical-note(W).png') !important;
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+#id2020:hover {
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(180, 222, 216, 1) !important;
+  background-image: url('icons/musical-note(W).png');
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+#id2021:hover {
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(232, 244, 183, 1) !important;
+  background-image: url('icons/musical-note(W).png');
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+```
+
+```{=html}
+<div class="storyboard-nav">
+  <div class="sbframelist" style="overflow: hidden;width: 100%;">
+    <ul style="transform: translateZ(0px); width: 270px;">
+      <li id="id2019" class="box"><h2>117</h2><h4>BPM</h4></li>
+      <li id="id2020" class="box"><h2>116</h2><h4>BPM</h4></li>
+      <li id="id2021" class="box"><h2>121</h2><h4>BPM</h4></li>
+    </ul>
+  </div>    
+</div>
+<div>
+  <button class="btn1 b2019" onclick="toggleVisibility('id2019')">2019</button>
+  <button class="btn1 b2020" onclick="toggleVisibility('id2020')">2020</button>
+  <button class="btn1 b2021" onclick="toggleVisibility('id2021')">2021</button>
+</div>
+
+
+
+<!-- <button class="btn1 b2019" onclick="toggleVisibility('2019')">2019</button> -->
+<!-- <button class="btn1 b2020" onclick="toggleVisibility('2020')">2020</button> -->
+<!-- <button class="btn1 b2021" onclick="toggleVisibility('2021')">2021</button> -->
+```
+*Press one of these buttons to display the average BPM*
 
 <!-- Frame 1 -->
 
@@ -1001,7 +1180,7 @@ p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min
                                                     "Average Streams of Top 50" = "#440d57")) +
   
   scale_x_discrete(label=function(x){
-    return(str_replace(x, "_20", "\n'"))
+    return(str_replace(x,"_20","\n'"))
     }) +
   
   scale_y_continuous(
@@ -1072,11 +1251,13 @@ l3cf <- list(
   )
 
 ggplotly(p, dynamicTicks = TRUE) %>%
-  rangeslider(start = "50%", end = "100%") %>%
+  add_lines() %>%
+  rangeslider(start = str_replace("45_2019","_20","\n'"), end = str_replace("6_2021","_20","\n'")) %>%
   layout(images = list(l1,l2,l3,l3cf))
 
 
 ```
+
 
 ***
 
@@ -1164,8 +1345,6 @@ According to variable 2, “Mood (feat. iann dior)” by 24kGoldn is the most po
 Variable 3 shows “Tigers” by Bilal Wahib is streamed the most per week while on top with 2,652,339 streams. The track underperforms on the other variables (v1 = 5,304,679 | v2 = 2 weeks). Thus, this song can be considered a viral hit or more harshly a “one hit wonder” lasting two weeks.
 
 There are limitations to this approach, only the number one spots are considere. For a clearer picture,a wider range is recommended. The tracks “Dance Monkey” and “Mood” performed quite similarly. It remains difficult to denote which song is the most popular.
-
-
 
 <!-- Frame 5 -->
 
@@ -1273,6 +1452,15 @@ The first plot shows the Dynamic Time Warping of the two tracks, using Euclidean
 The tracks do share a   In addition the 'sound and feel' of the tracks differ: 15 miljoen mensen has a higher danceability, energy, and loudness, whereas "17 miljoen mensen" has a much higher acousticness and liveness (due to the recording being a live performance). A remarkable commonality probably explains the differences: Both tracks were unintended single releases, ["15 miljoen mensen" was initially written for a commercial, and "17 Miljoen mensen" as a tribute for a (due to COVID-19) canceled music concert](https://nl.wikipedia.org/wiki/15_miljoen_mensen){target="_blank"}. The different motivations behind the tracks reflects the different 'sound and feel' as shown by Spotify API.
 
 `r knitr::kable(miljoen_f)`
+
+***
+
+```{=html}
+<object data="https://open.spotify.com/embed/playlist/3wraxQVN9Z6PmTk7wEA6wR" width="280" height="140">
+    <embed src="https://open.spotify.com/embed/playlist/3wraxQVN9Z6PmTk7wEA6wR" width="280" height="140"></embed>
+    Error: Embedded data could not be displayed.
+</object>
+```
 
 
 
@@ -1462,9 +1650,20 @@ The timbre SSM is plotted using Euclidean norm, Euclidean distance and summarize
 
 The pitch SSM is plotted using Euclidean norm, cosine distance and summarized by root mean square. This plot shows a slightly more noticeable checkerboard pattern. At the 150 second mark, the plot shows a significant change.
 
+***
+
+```{=html}
+<object data="https://open.spotify.com/embed/track/1rgnBhdG2JDFTbYkYRZAku" width="280" height="140">
+    <embed src="https://open.spotify.com/embed/track/1rgnBhdG2JDFTbYkYRZAku" width="280" height="140"></embed>
+    Error: Embedded data could not be displayed.
+</object>
+```
+
+
+
 <!-- Frame 8 -->
 
-### 8. In the mood for which keys?<br>Chord and Key estimations for "Mood".
+### 8. In the *mood* for which keys?<br>Chord and Key estimations for *"Mood"*.
 
 ```{r, echo = FALSE}
 
@@ -1524,7 +1723,7 @@ grid.arrange(
 The track *Mood* by 24kGoldn ft. iann diorr is also one of the identified popular tracks in the corpus.
 A keygram and chordogram are plotted in order to show the tonal progression of the track by estimating the chords and key for each segment.
 
-The keygram shows that the key *E♭ major, G minor, F major, C major, G major*, and C♯minor are prevalent keys during the track.
+The keygram shows that the key *E♭ major, G minor, F major, C major, G major*, and *C♯minor* are prevalent keys during the track.
 The Chordogram show that the chords *C minor, E♭ 7, and E♭ major* are the most prevalent chords of the track. 
 
 **Spotify API**
@@ -1533,7 +1732,7 @@ According to the [Spotify API](https://developer.spotify.com/documentation/web-a
 
 **Chordify**
 
-The [Chordify algorithm](https://chordify.net/chords/24kgoldn-mood-official-video-ft-iann-dior-24kgoldnvevo){target="_blank"} identified the chords the following (4/4) loop:
+The [Chordify algorithm](https://chordify.net/chords/24kgoldn-mood-official-video-ft-iann-dior-24kgoldnvevo){target="_blank"} identified the chords within the following (4/4) loop:
 
 | E♭ - Gm - | B♭ - F - |
 
@@ -1542,10 +1741,20 @@ The identified key appears to be on the natural scale:
 
 G - A - B♭ - C - D - E♭ - F
 
+***
+
+```{=html}
+<object data="https://open.spotify.com/embed/track/3tjFYV6RSFtuktYl3ZtYcq" width="280" height="140">
+    <embed src="https://open.spotify.com/embed/track/3tjFYV6RSFtuktYl3ZtYcq" width="280" height="140"></embed>
+    Error: Embedded data could not be displayed.
+</object>
+```
+
+
 
 <!-- Frame 9 -->
 
-### 9. Histogram of Keys within the corpus.
+### 9. Histogram of Keys within the corpus shows **C♯** as the most common key.
 
 
 ```{r, echo = FALSE}
@@ -1629,7 +1838,7 @@ ply9_2 <- ggplotly(p9_2, width = 1050, height = 525)
 ```{r, echo = FALSE}
 tabBox(width=NULL,
        height = 1000,
-       title = tagList(shiny::icon("music"),"Key freqencies"),
+       title = tagList(shiny::icon("music"),"Key frequencies"),
        id = "tabset2",
        tabPanel("Normalized key ocurrences", ply9_2),
        tabPanel("key counts", ply9_1)
