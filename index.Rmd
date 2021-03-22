@@ -39,6 +39,9 @@ library(slickR)
 library(svglite)
 library(DT)
 library(stringi)
+library(tidymodels)
+library(ggdendro)
+library(heatmaply)
 
 library(flexdashboard)
 library(shinydashboard)
@@ -393,6 +396,7 @@ for(m in sorted_fweeks2019){
     datm <- get(m) %>%
         summarize(danceability,energy,key,loudness,mode,speechiness,acousticness,instrumentalness,
                   liveness,valence,tempo,duration_minute = duration_ms/1000/60, year, week = as.factor(week),
+                  track.uri = uri,
                   mean_dance = mean(danceability),
                   mean_energy = mean(energy),
                   mean_key = mean(key),
@@ -423,6 +427,7 @@ for(m in sorted_fweeks2020){
     datm <- get(m) %>%
         summarize(danceability,energy,key,loudness,mode,speechiness,acousticness,instrumentalness,
                   liveness,valence,tempo,duration_minute = duration_ms/1000/60, year, week = as.factor(week),
+                  track.uri = uri,
                   mean_dance = mean(danceability),
                   mean_energy = mean(energy),
                   mean_key = mean(key),
@@ -453,6 +458,7 @@ for(m in sorted_fweeks2021){
     datm <- get(m) %>%
         summarize(danceability,energy,key,loudness,mode,speechiness,acousticness,instrumentalness,
                   liveness,valence,tempo,duration_minute = duration_ms/1000/60, year, week = as.factor(week),
+                  track.uri = uri,
                   mean_dance = mean(danceability),
                   mean_energy = mean(energy),
                   mean_key = mean(key),
@@ -493,6 +499,7 @@ join_big2020 <- dplyr::bind_cols(big_all2020f, big_all2020)
 join_big2021 <- dplyr::bind_cols(big_all2021f, big_all2021)
 
 corpus_df <- dplyr::bind_rows(join_big2019,join_big2020,join_big2021)
+corpus_top10 <- dplyr::bind_rows(head(join_big2019, 10),head(join_big2020, 10),head(join_big2021, 10))
 ```
 
 ```{r COVID-19 dataset, include = FALSE}
@@ -654,327 +661,290 @@ key_templates <-
   )
 ```
 
+```{r, include = FALSE}
+get_conf_mat <- function(fit) {
+  outcome <- .get_tune_outcome_names(fit)
+  fit %>% 
+    collect_predictions() %>% 
+    conf_mat(truth = outcome, estimate = .pred_class)
+}  
+
+get_pr <- function(fit) {
+  fit %>% 
+    conf_mat_resampled() %>% 
+    group_by(Prediction) %>% mutate(precision = Freq / sum(Freq)) %>% 
+    group_by(Truth) %>% mutate(recall = Freq / sum(Freq)) %>% 
+    ungroup() %>% filter(Prediction == Truth) %>% 
+    select(class = Prediction, precision, recall)
+}  
+```
+
 <!-- Code for dashboard -->
 
 <!-- Page 1 (additional pages (optional) can add extra frames) -->
 
-<!-- Frame 11 -->
+<!-- Frame 12 -->
 
-### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>11. *"Tigers"* by Bilal Wahib has a tempo of **112 BPM**
+### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>12.1 Is it **impossible to predict** whether a track was in the charts **before or during the pandemic**.
 
 ```{r, include = FALSE, cache = TRUE}
-tiger <- get_tidy_audio_analysis("7jnaow1bGpKO2VkgtYE8Vv")
+corpus_features <-
+    corpus_top10 %>%  # For your portfolio, change this to the name of your corpus.
+    add_audio_analysis() %>% 
+    mutate(
+        year_f = factor(year...13),
+        segments = map2(segments, key, compmus_c_transpose),
+        pitches =
+            map(
+                segments,
+                compmus_summarise, pitches,
+                method = "mean", norm = "manhattan"
+            ),
+        timbre =
+            map(
+                segments,
+                compmus_summarise, timbre,
+                method = "mean",
+            )
+    ) %>%
+    mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
+    mutate_at(vars(pitches, timbre), map, bind_rows) %>%
+    unnest(cols = c(pitches, timbre))
+```
 
-p11_1 <- tiger %>%
-  tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) %>%
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(title = "Tempogram", subtitle = "Tigers - Bilal Wahib",  x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
+```{r, include = FALSE, cache = TRUE}
+corpus_recipe <-
+  recipe(
+    year_f ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo +
+      duration +
+      C + `C#|Db` + D + `D#|Eb` +
+      E + `F` + `F#|Gb` + G +
+      `G#|Ab` + A + `A#|Bb` + B +
+      c01 + c02 + c03 + c04 + c05 + c06 +
+      c07 + c08 + c09 + c10 + c11 + c12,
+    data = corpus_features,          # Use the same name as the previous block.
+  ) %>%
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors())      # Converts to z-scores.
+  # step_range(all_predictors())    # Sets range to [0, 1].
+```
 
+```{r, include=FALSE, cache = TRUE}
+corpus_cv <- corpus_features %>% vfold_cv(10)
 
-p11_2 <- tiger %>%
-  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) %>%
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(title = "Tempogram (cyclic)", subtitle = "Tigers - Bilal Wahib", x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
+knn_model <-
+  nearest_neighbor(neighbors = 1) %>%
+  set_mode("classification") %>% 
+  set_engine("kknn")
+corpus_knn <- 
+  workflow() %>% 
+  add_recipe(corpus_recipe) %>% 
+  add_model(knn_model) %>% 
+  fit_resamples(
+    corpus_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
+``` 
 
+```{r, include=FALSE, cache = TRUE}
+tree_model <-
+  decision_tree() %>%
+  set_mode("classification") %>% 
+  set_engine("C5.0")
+corpus_tree <- 
+  workflow() %>% 
+  add_recipe(corpus_recipe) %>% 
+  add_model(tree_model) %>% 
+  fit_resamples(
+    corpus_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
+``` 
+
+```{r, echo= FALSE}
+#corpus_knn %>% get_conf_mat()
+corpus_knn %>% get_conf_mat() %>% autoplot(type = "mosaic")
+#corpus_knn %>% get_conf_mat() %>% autoplot(type = "heatmap")
+# corpus_tree %>% get_pr()
+```
+
+***
+
+The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "era's" (e.g. 70's, 80'and 90's) would render better results.
+
+<!-- `r table(corpus_tree %>% get_pr())` -->
+
+<!-- `r table(corpus_knn %>% get_pr())` -->
+
+<!-- Frame 13 -->
+
+### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>12.2 Is it **impossible to predict** whether a track was in the charts **before or during the pandemic**.
+
+```{r, include = FALSE, cache = TRUE}
+forest_model <-
+  rand_forest() %>%
+  set_mode("classification") %>% 
+  set_engine("ranger", importance = "impurity")
+corpus_forest <- 
+  workflow() %>% 
+  add_recipe(corpus_recipe) %>% 
+  add_model(forest_model) %>% 
+  fit_resamples(
+    corpus_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
 ```
 
 ```{r, echo=FALSE}
-# px_1 <- xmlSVG({show(p11_1)}, standalone = TRUE)
-# 
-# px_2 <- xmlSVG({show(p11_2)}, standalone = TRUE)
-# 
-# slickR(list(px_1, px_2), height = 200, width = "95%")
-
-settings <- settings(dots = TRUE, adaptiveHeight = FALSE)
-
-plist <- list("Rplot1.png", "Rplot2.png")
-
-slickR(plist, height = "80", width = "80%") + settings
-
+workflow() %>% 
+  add_recipe(corpus_recipe) %>% 
+  add_model(forest_model) %>% 
+  fit(corpus_features) %>% 
+  pluck("fit", "fit", "fit") %>%
+  ranger::importance() %>% 
+  enframe() %>% 
+  mutate(name = fct_reorder(name, value)) %>% 
+  ggplot(aes(name, value)) + 
+  geom_col() + 
+  coord_flip() +
+  theme_minimal() +
+  labs(x = NULL, y = "Importance")
 ```
 
-```{css}
-.chart-stage .html-widget-static-bound {
-    width: 95% !important;
-    height: 100% !important;
-}
-```
-
-***
-
-Another popular track in the corpus is "Tigers" by Bilal Wahib. Tempograms are plotted in order to show the estimated BPM of the track along its duration.
-
-The *tempo* feature of the Spotify API estimates a **BPM of 111.943** (rounded 112 BPM).
-
-The first Tempogram doens't explicitly reflect the estimation of the Spotify API, tempi of around 210-220 and 430-450 are shown in the plot. The plot might record the represent half-time and quarter time BPM's of 224 and 448 (based on the estimation of 112 BPM).
-
-The second Tempogram (cyclic), is adjusted to represent the more 'common' tempi at which humans tap. This plot does reflect the Spotify API estimation of 112 BPM more clearly.
-
-At the 75 second mark, there is a slight drop and increase in tempo. From this point, noticable is the tape stop sound effect, which is immediately followed by the bridge. The BPM however, remains the same (try to tap along).
-
-***
-
-```{=html}
-<object data="https://open.spotify.com/embed/track/7jnaow1bGpKO2VkgtYE8Vv" width="280" height="140">
-    <embed src="https://open.spotify.com/embed/track/7jnaow1bGpKO2VkgtYE8Vv" width="280" height="140"></embed>
-    Error: Embedded data could not be displayed.
-</object>
-```
-
-
-
-<!-- Frame 10 -->
-
-### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>10. Most prevalent beats:<br>Tempi around **100 BPM** and **120 BPM** most common in corpus.
-
-```{r, echo = FALSE}
-pc <- corpus_df %>%
-  group_by(year...31) %>%
-  summarize(tempo, mode = recode_factor(mode,
-                              `0` = as.character("Minor"),
-                              `1` = as.character("Major")))
-p10_1 <- pc %>%  
-#ggplot(aes(x = key_key, fill = as.factor(mode))) +
-ggplot(aes(x = tempo, fill = year...31)) +
-  #facet_wrap(~ year...31) +
-  scale_fill_viridis_d(
-    alpha = 0.7,
-    begin = 0.2,
-    end = 0.9,
-    option = "D",
-    name = "Year",
-    # labels = c("Minor", "Major")
-  ) +
-  labs(
-    x = "BPM",
-    title = "Tempo frequency in corpus",
-    subtitle = "") +
-  theme_light() +
-  scale_x_continuous(breaks = seq(40, 210, by = 20)) +
-  #geom_histogram(stat = "count")
-  geom_density(alpha = 0.475)
-
-# p9_2 <- pc %>%  
-# ggplot(aes(x = key_key, fill = as.factor(mode))) +
-#   facet_wrap(~ year...31) +
-#   scale_fill_viridis_d(
-#     alpha = 0.7,
-#     begin = 0.6,
-#     end = 0.9,
-#     option = "D",
-#     name = "Mode",
-#     labels = c("Minor", "Major")
-#   ) +
+```{r, include=FALSE, cache = TRUE}
+# corpus_features %>%
+#   ggplot(aes(x = c01, y = c07, colour = year_f, size = tempo)) +
+#   geom_point(alpha = 0.8) +
+#   scale_color_viridis_d() +
 #   labs(
-#     x = "Key",
-#     y = "Density",
-#     title = "Normalized key occurrences in corpus per year",
-#     subtitle = "") +
-#   theme_light() +
-#   #geom_histogram(aes(y=..count../sum(..count..)), stat = "count", alpha=0.6, position="identity")
-#   geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]), stat = "count") #+
-#   #scale_y_continuous(labels=percent_format())
+#     x = "Timbre Component 1",
+#     y = "Timbre Component 7",
+#     size = "Tempo",
+#     colour = "Year"
+#   )
+``` 
+
+
+```{r, include=FALSE}
+# corpus_juice <-
+#   recipe(
+#     `Track Name` ~
+#       danceability +
+#       energy +
+#       loudness +
+#       speechiness +
+#       acousticness +
+#       instrumentalness +
+#       liveness +
+#       valence +
+#       tempo +
+#       duration_minute, # +
+#       # C + `C#|Db` + D + `D#|Eb` +
+#       # E + `F` + `F#|Gb` + G +
+#       # `G#|Ab` + A + `A#|Bb` + B +
+#       # c01 + c02 + c03 + c04 + c05 + c06 +
+#       # c07 + c08 + c09 + c10 + c11 + c12,
+#     data = corpus_top10
+#   ) %>%
+#   step_center(all_predictors()) %>%
+#   step_scale(all_predictors()) %>% 
+#   # step_range(all_predictors()) %>% 
+#   prep(corpus_top10 %>% mutate(track.name = str_trunc(`Track Name`, 20))) %>%
+#   juice() %>%
+#   column_to_rownames("Track Name")
 # 
-# ply1_1 <- ggplotly(p9_1, width = 1050, height = 525)
-# ply9_2 <- ggplotly(p9_2, width = 1050, height = 525)
-
-#knitr::include_graphics("figure/hist.png")
-
-# ply10_1 <- 
-  
-ggplotly(p10_1)
-
-averageBPM <- corpus_df %>%
-  summarize(mean_tempo = mean(tempo))
-
-# vb10 <- flexdashboard::valueBox(round(averageBPM$mean_tempo), icon="fa-music")
-
-# grid.arrange(
-#   arrangeGrob(
-#     ply10_1,
-#     vb10,ncol = 2),
-#   nrow = 1)
+# corpus_dist <- dist(corpus_juice, method = "euclidean")
+# 
+# corpus_dist %>% 
+#   hclust(method = "single") %>% # Try single, average, and complete.
+#   dendro_data() %>%
+#   ggdendrogram()
 ```
-
 ***
 
-The density plot shows that overall the the most frequent tempi within the corpus is around 90-100 BPM and 115-128 BPM.
-The year **2019** showed a strong preference for tracks around **98 BPM** and to a lesser extent **123 BPM**.
+The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "era's" (e.g. 70's, 80'and 90's) would render better results.
 
-The year **2020** showed a strong preference for tracks around both **95 BPM** and **121 BPM**.
+<!-- Frame 14 -->
 
-The first **7 weeks of 2021** showed a preference for tracks around **99 BPM** and **122 BPM**.
+### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>12.3 Is it **impossible to predict** whether a track was in the charts **before or during the pandemic**.
+
+```{r, include = FALSE, cache = TRUE}
+# workflow() %>% 
+#   add_recipe(corpus_recipe) %>% 
+#   add_model(forest_model) %>% 
+#   fit(corpus_features) %>% 
+#   pluck("fit", "fit", "fit") %>%
+#   ranger::importance() %>% 
+#   enframe() %>% 
+#   mutate(name = fct_reorder(name, value)) %>% 
+#   ggplot(aes(name, value)) + 
+#   geom_col() + 
+#   coord_flip() +
+#   theme_minimal() +
+#   labs(x = NULL, y = "Importance")
+```
+
+```{r, echo=FALSE}
+corpus_features %>%
+  ggplot(aes(x = c01, y = c07, colour = year_f, size = tempo)) +
+  geom_point(alpha = 0.8) +
+  scale_color_viridis_d() +
+  labs(
+    x = "Timbre Component 1",
+    y = "Timbre Component 7",
+    size = "Tempo",
+    colour = "Year"
+  )
+``` 
 
 
+```{r, include=FALSE}
+# corpus_juice <-
+#   recipe(
+#     `Track Name` ~
+#       danceability +
+#       energy +
+#       loudness +
+#       speechiness +
+#       acousticness +
+#       instrumentalness +
+#       liveness +
+#       valence +
+#       tempo +
+#       duration_minute, # +
+#       # C + `C#|Db` + D + `D#|Eb` +
+#       # E + `F` + `F#|Gb` + G +
+#       # `G#|Ab` + A + `A#|Bb` + B +
+#       # c01 + c02 + c03 + c04 + c05 + c06 +
+#       # c07 + c08 + c09 + c10 + c11 + c12,
+#     data = corpus_top10
+#   ) %>%
+#   step_center(all_predictors()) %>%
+#   step_scale(all_predictors()) %>% 
+#   # step_range(all_predictors()) %>% 
+#   prep(corpus_top10 %>% mutate(track.name = str_trunc(`Track Name`, 20))) %>%
+#   juice() %>%
+#   column_to_rownames("Track Name")
+# 
+# corpus_dist <- dist(corpus_juice, method = "euclidean")
+# 
+# corpus_dist %>% 
+#   hclust(method = "single") %>% # Try single, average, and complete.
+#   dendro_data() %>%
+#   ggdendrogram()
+```
 ***
 
-**Average Tempo:**
-
-```{js, echo = FALSE}
-var divs = ["id2019", "id2020", "id2021"];
-var visibleDivId = null;
-
-function toggleVisibility(divId) {
-  if (visibleDivId === divId) {
-    visibleDivId = null;
-  } else {
-    visibleDivId = divId;
-  }
-
-  hideNonVisibleDivs();
-}
-
-function hideNonVisibleDivs() {
-  var i, divId, div;
-
-  for (i = 0; i < divs.length; i++) {
-    divId = divs[i];
-    div = document.getElementById(divId);
-
-    if (visibleDivId === divId) {
-      div.style.display = "block";
-    } else {
-      div.style.display = "none";
-    }
-  }
-}
-```
-
-```{css, echo = FALSE}
-.btn1 {
-  border: none;
-  background-color: rgba(29, 185, 84, 0.8);
-  padding: 14px 26px;
-  font-size: 16px;
-  cursor: pointer;
-  display: inline-block;
-  color: white;
-  transition: 0.3s;
-}
-
-.btn1:hover {
-  # background-color: rgba(29, 185, 84, 0.8);
-  background-color: rgba(47, 71, 79, 0.7);
-  color: white;
-}
-
-.b2019 {
-  color: rgba(44, 62, 80, 1);
-  background-color: #c0c1d7;
-}
-
-.b2020 {
-  color: rgba(44, 62, 80, 1);
-  background-color: #b4ded8;
-}
-
-.b2021 {
-  color: rgba(44, 62, 80, 1);
-  background-color: #e8f4b7;
-}
-
-#id2019 {
-  display: none;
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(192, 193, 215, 0.8) !important;
-  background-image: url('icons/musical-note(B).png');
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-#id2020 {
-  display: none;
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(180, 222, 216, 0.8) !important;
-  background-image: url('icons/musical-note(B).png');
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-#id2021 {
-  display: none;
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(232, 244, 183, 0.8) !important;
-  background-image: url('icons/musical-note(B).png');
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-#box hover
-
-#id2019:hover {
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(192, 193, 215, 1)!important;
-  background-image: url('icons/musical-note(W).png') !important;
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-#id2020:hover {
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(180, 222, 216, 1) !important;
-  background-image: url('icons/musical-note(W).png');
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-#id2021:hover {
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(232, 244, 183, 1) !important;
-  background-image: url('icons/musical-note(W).png');
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-```
-
-```{=html}
-<div class="storyboard-nav">
-  <div class="sbframelist" style="overflow: hidden;width: 100%;">
-    <ul style="transform: translateZ(0px); width: 270px;">
-      <li id="id2019" class="box"><h2>117</h2><h4>BPM</h4></li>
-      <li id="id2020" class="box"><h2>116</h2><h4>BPM</h4></li>
-      <li id="id2021" class="box"><h2>121</h2><h4>BPM</h4></li>
-    </ul>
-  </div>    
-</div>
-<div>
-  <button class="btn1 b2019" onclick="toggleVisibility('id2019')">2019</button>
-  <button class="btn1 b2020" onclick="toggleVisibility('id2020')">2020</button>
-  <button class="btn1 b2021" onclick="toggleVisibility('id2021')">2021</button>
-</div>
-
-
-
-<!-- <button class="btn1 b2019" onclick="toggleVisibility('2019')">2019</button> -->
-<!-- <button class="btn1 b2020" onclick="toggleVisibility('2020')">2020</button> -->
-<!-- <button class="btn1 b2021" onclick="toggleVisibility('2021')">2021</button> -->
-```
-*Press one of these buttons to display the average BPM*
+The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "era's" (e.g. 70's, 80'and 90's) would render better results.
 
 <!-- Frame 1 -->
 
@@ -1760,7 +1730,7 @@ G - A - B♭ - C - D - E♭ - F
 
 ```{r, echo = FALSE}
 pc <- corpus_df %>%
-  group_by(year...31) %>%
+  group_by(year...32) %>%
   summarize(key, mode = recode_factor(mode,
                               `0` = as.character("Minor"),
                               `1` = as.character("Major"))) %>%
@@ -1792,7 +1762,7 @@ pc <- corpus_df %>%
     #                           `11` = "B")) %>%
 p9_1 <- pc %>%  
 ggplot(aes(x = key_key, fill = as.factor(mode))) +
-  facet_wrap(~ year...31) +
+  facet_wrap(~ year...32) +
   scale_fill_viridis_d(
     alpha = 0.7,
     begin = 0.6,
@@ -1810,7 +1780,7 @@ ggplot(aes(x = key_key, fill = as.factor(mode))) +
 
 p9_2 <- pc %>%  
 ggplot(aes(x = key_key, fill = as.factor(mode))) +
-  facet_wrap(~ year...31) +
+  facet_wrap(~ year...32) +
   scale_fill_viridis_d(
     alpha = 0.7,
     begin = 0.6,
@@ -1854,4 +1824,321 @@ In 2019, There is a clear significant higher count of **C♯, F, G, B** key.
 
 In 2020, The keys **C♯, F♯, G♯, B** have a significantly higher frequency in the corpus.
 
-Note that 2021 only contains the first 7 weeks, whereas 2019 and 2020 contain 52 and 53 weeks respectively. Therefore, its not very representative to make the most informed comparisons. 
+Note that 2021 only contains the first 7 weeks, whereas 2019 and 2020 contain 52 and 53 weeks respectively. Therefore, its not very representative to make the most informed comparisons.
+
+<!-- Frame 10 -->
+
+### 10. Most prevalent beats:<br>Tempi around **100 BPM** and **120 BPM** most common in corpus.
+
+```{r, echo = FALSE}
+pc <- corpus_df %>%
+  group_by(year...32) %>%
+  summarize(tempo, mode = recode_factor(mode,
+                              `0` = as.character("Minor"),
+                              `1` = as.character("Major")))
+p10_1 <- pc %>%  
+#ggplot(aes(x = key_key, fill = as.factor(mode))) +
+ggplot(aes(x = tempo, fill = year...32)) +
+  #facet_wrap(~ year...31) +
+  scale_fill_viridis_d(
+    alpha = 0.7,
+    begin = 0.2,
+    end = 0.9,
+    option = "D",
+    name = "Year",
+    # labels = c("Minor", "Major")
+  ) +
+  labs(
+    x = "BPM",
+    title = "Tempo frequency in corpus",
+    subtitle = "") +
+  theme_light() +
+  scale_x_continuous(breaks = seq(40, 210, by = 20)) +
+  #geom_histogram(stat = "count")
+  geom_density(alpha = 0.475)
+
+# p9_2 <- pc %>%  
+# ggplot(aes(x = key_key, fill = as.factor(mode))) +
+#   facet_wrap(~ year...31) +
+#   scale_fill_viridis_d(
+#     alpha = 0.7,
+#     begin = 0.6,
+#     end = 0.9,
+#     option = "D",
+#     name = "Mode",
+#     labels = c("Minor", "Major")
+#   ) +
+#   labs(
+#     x = "Key",
+#     y = "Density",
+#     title = "Normalized key occurrences in corpus per year",
+#     subtitle = "") +
+#   theme_light() +
+#   #geom_histogram(aes(y=..count../sum(..count..)), stat = "count", alpha=0.6, position="identity")
+#   geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]), stat = "count") #+
+#   #scale_y_continuous(labels=percent_format())
+# 
+# ply1_1 <- ggplotly(p9_1, width = 1050, height = 525)
+# ply9_2 <- ggplotly(p9_2, width = 1050, height = 525)
+
+#knitr::include_graphics("figure/hist.png")
+
+# ply10_1 <- 
+  
+ggplotly(p10_1)
+
+averageBPM <- corpus_df %>%
+  summarize(mean_tempo = mean(tempo))
+
+# vb10 <- flexdashboard::valueBox(round(averageBPM$mean_tempo), icon="fa-music")
+
+# grid.arrange(
+#   arrangeGrob(
+#     ply10_1,
+#     vb10,ncol = 2),
+#   nrow = 1)
+```
+
+***
+
+The density plot shows that overall the the most frequent tempi within the corpus is around 90-100 BPM and 115-128 BPM.
+The year **2019** showed a strong preference for tracks around **98 BPM** and to a lesser extent **123 BPM**.
+
+The year **2020** showed a strong preference for tracks around both **95 BPM** and **121 BPM**.
+
+The first **7 weeks of 2021** showed a preference for tracks around **99 BPM** and **122 BPM**.
+
+
+***
+
+**Average Tempo:**
+
+```{js, echo = FALSE}
+var divs = ["id2019", "id2020", "id2021"];
+var visibleDivId = null;
+
+function toggleVisibility(divId) {
+  if (visibleDivId === divId) {
+    visibleDivId = null;
+  } else {
+    visibleDivId = divId;
+  }
+
+  hideNonVisibleDivs();
+}
+
+function hideNonVisibleDivs() {
+  var i, divId, div;
+
+  for (i = 0; i < divs.length; i++) {
+    divId = divs[i];
+    div = document.getElementById(divId);
+
+    if (visibleDivId === divId) {
+      div.style.display = "block";
+    } else {
+      div.style.display = "none";
+    }
+  }
+}
+```
+
+```{css, echo = FALSE}
+.btn1 {
+  border: none;
+  background-color: rgba(29, 185, 84, 0.8);
+  padding: 14px 26px;
+  font-size: 16px;
+  cursor: pointer;
+  display: inline-block;
+  color: white;
+  transition: 0.3s;
+}
+
+.btn1:hover {
+  # background-color: rgba(29, 185, 84, 0.8);
+  background-color: rgba(47, 71, 79, 0.7);
+  color: white;
+}
+
+.b2019 {
+  color: rgba(44, 62, 80, 1);
+  background-color: #c0c1d7;
+}
+
+.b2020 {
+  color: rgba(44, 62, 80, 1);
+  background-color: #b4ded8;
+}
+
+.b2021 {
+  color: rgba(44, 62, 80, 1);
+  background-color: #e8f4b7;
+}
+
+#id2019 {
+  display: none;
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(192, 193, 215, 0.8) !important;
+  background-image: url('icons/musical-note(B).png');
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+#id2020 {
+  display: none;
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(180, 222, 216, 0.8) !important;
+  background-image: url('icons/musical-note(B).png');
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+#id2021 {
+  display: none;
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(232, 244, 183, 0.8) !important;
+  background-image: url('icons/musical-note(B).png');
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+#box hover
+
+#id2019:hover {
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(192, 193, 215, 1)!important;
+  background-image: url('icons/musical-note(W).png') !important;
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+#id2020:hover {
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(180, 222, 216, 1) !important;
+  background-image: url('icons/musical-note(W).png');
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+#id2021:hover {
+  transition: 0.3s;
+  #background-color: rgba(191, 191, 191, 0.7);
+  background-color: rgba(232, 244, 183, 1) !important;
+  background-image: url('icons/musical-note(W).png');
+  background-repeat: no-repeat;
+  background-size: 35%;
+  background-position: 100% 70%;
+  background-blend-mode: soft-light;
+}
+
+```
+
+```{=html}
+<div class="storyboard-nav">
+  <div class="sbframelist" style="overflow: hidden;width: 100%;">
+    <ul style="transform: translateZ(0px); width: 270px;">
+      <li id="id2019" class="box"><h2>117</h2><h4>BPM</h4></li>
+      <li id="id2020" class="box"><h2>116</h2><h4>BPM</h4></li>
+      <li id="id2021" class="box"><h2>121</h2><h4>BPM</h4></li>
+    </ul>
+  </div>    
+</div>
+<div>
+  <button class="btn1 b2019" onclick="toggleVisibility('id2019')">2019</button>
+  <button class="btn1 b2020" onclick="toggleVisibility('id2020')">2020</button>
+  <button class="btn1 b2021" onclick="toggleVisibility('id2021')">2021</button>
+</div>
+
+
+
+<!-- <button class="btn1 b2019" onclick="toggleVisibility('2019')">2019</button> -->
+<!-- <button class="btn1 b2020" onclick="toggleVisibility('2020')">2020</button> -->
+<!-- <button class="btn1 b2021" onclick="toggleVisibility('2021')">2021</button> -->
+```
+*Press one of these buttons to display the average BPM*
+
+
+<!-- Frame 11 -->
+
+### 11. *"Tigers"* by Bilal Wahib has a tempo of **112 BPM**
+
+```{r, include = FALSE, cache = TRUE}
+tiger <- get_tidy_audio_analysis("7jnaow1bGpKO2VkgtYE8Vv")
+
+p11_1 <- tiger %>%
+  tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) %>%
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(title = "Tempogram", subtitle = "Tigers - Bilal Wahib",  x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+
+p11_2 <- tiger %>%
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) %>%
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(title = "Tempogram (cyclic)", subtitle = "Tigers - Bilal Wahib", x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+```
+
+```{r, echo=FALSE}
+# px_1 <- xmlSVG({show(p11_1)}, standalone = TRUE)
+# 
+# px_2 <- xmlSVG({show(p11_2)}, standalone = TRUE)
+# 
+# slickR(list(px_1, px_2), height = 200, width = "95%")
+
+settings <- settings(dots = TRUE, adaptiveHeight = FALSE)
+
+plist <- list("Rplot1.png", "Rplot2.png")
+
+slickR(plist, height = "80", width = "80%") + settings
+
+```
+
+```{css}
+.chart-stage .html-widget-static-bound {
+    width: 95% !important;
+    height: 100% !important;
+}
+```
+
+***
+
+Another popular track in the corpus is "Tigers" by Bilal Wahib. Tempograms are plotted in order to show the estimated BPM of the track along its duration.
+
+The *tempo* feature of the Spotify API estimates a **BPM of 111.943** (rounded 112 BPM).
+
+The first Tempogram doens't explicitly reflect the estimation of the Spotify API, tempi of around 210-220 and 430-450 are shown in the plot. The plot might record the represent half-time and quarter time BPM's of 224 and 448 (based on the estimation of 112 BPM).
+
+The second Tempogram (cyclic), is adjusted to represent the more 'common' tempi at which humans tap. This plot does reflect the Spotify API estimation of 112 BPM more clearly.
+
+At the 75 second mark, there is a slight drop and increase in tempo. From this point, noticable is the tape stop sound effect, which is immediately followed by the bridge. The BPM however, remains the same (try to tap along).
+
+***
+
+```{=html}
+<object data="https://open.spotify.com/embed/track/7jnaow1bGpKO2VkgtYE8Vv" width="280" height="140">
+    <embed src="https://open.spotify.com/embed/track/7jnaow1bGpKO2VkgtYE8Vv" width="280" height="140"></embed>
+    Error: Embedded data could not be displayed.
+</object>
+```
