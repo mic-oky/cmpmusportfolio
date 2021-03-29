@@ -1251,7 +1251,7 @@ miljoen_17c <- miljoen_17 %>%
     )
   ) +
   geom_tile() +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude", subtitle = "17 Miljoen Mensen (2020)") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "17 Miljoen Mensen (2020)", subtitle = "Chromagram") +
   theme_minimal() +
   scale_fill_viridis_c()
 
@@ -1267,7 +1267,7 @@ miljoen_15c <- miljoen_15 %>%
     )
   ) +
   geom_tile() +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude", subtitle = "Chromagram/n15 Miljoen Mensen (1996)") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "15 Miljoen Mensen (1996)", subtitle = "Chromagram") +
   theme_minimal() +
   scale_fill_viridis_c()
 
@@ -1288,7 +1288,7 @@ miljoen_p <- compmus_long_distance(
   ) +
   geom_tile() +
   coord_equal() +
-  labs(x = "15 Milljoen mensen (1996)", y = "17 Miljoen mensen (2020)", subtitle = "Dynamic Time Warp/n17 miljoen mensen vs. 15 mijoen mensen") +
+  labs(x = "15 Milljoen mensen (1996)", y = "17 Miljoen mensen (2020)", title = "Dynamic Time Warp", subtitle = "17 miljoen mensen vs. 15 mijoen mensen") +
   theme_minimal() +
   scale_fill_viridis_c(guide = NULL)
 
@@ -1632,6 +1632,8 @@ The identified key appears to be on the natural scale:
 
 G - A - B♭ - C - D - E♭ - F
 
+The differences of the found/estimated chords are due to the different Audio Chord Estimation algorithms the Spotify API and Chordify uses. While the Chordify is not considered perfect, it is considered 'good enough' to be useful. There are differences, but as seen above, there is some overlap between the API's.
+
 ***
 
 ```{=html}
@@ -1951,8 +1953,7 @@ At the 75 second mark, there is a slight drop and increase in tempo. From this p
 ```
 <!-- Frame 12 -->
 
-### Trees and Neighbors: Applying machine learning model on corpus show there *is* a **difference between the pre-pandemic and intra-pandemic periods**.
-
+### 12. Trees and Neighbors: Applying machine learning model on corpus show there *is* a **difference between the pre-pandemic and intra-pandemic periods**.
 ```{r, include = FALSE, cache = TRUE}
 corpus_cf <- corpus_top25 %>%
     add_audio_analysis()
@@ -2044,49 +2045,121 @@ corpus_tree <-
   )
 ``` 
 
-```{r, echo= FALSE}
+```{r, include = FALSE, cache = TRUE}
+forest_model <-
+  rand_forest() %>%
+  set_mode("classification") %>%
+  set_engine("ranger", importance = "impurity")
+corpus_forest <-
+  workflow() %>%
+  add_recipe(corpus_recipe) %>%
+  add_model(forest_model) %>%
+  fit_resamples(
+    corpus_cv,
+    control = control_resamples(save_pred = TRUE)
+  )
+```
+
+```{r, echo= FALSE, eval=FALSE}
 #corpus_knn %>% get_conf_mat()
 # corpus_knn %>% get_conf_mat() %>% autoplot(type = "mosaic")
 #corpus_knn %>% get_conf_mat() %>% autoplot(type = "heatmap")
 # corpus_tree %>% get_pr()
 
-settings <- settings(dots = TRUE, adaptiveHeight = FALSE)
-
-plist <- list("plot1.png", "plot2.png", "plot3.png")
-
-slickR(plist, height = "80", width = "80%") + settings
+# settings <- settings(dots = TRUE, adaptiveHeight = FALSE)
+# 
+# plist <- list("plot1.png", "plot2.png", "plot3.png")
+# 
+# slickR(plist, height = "80", width = "80%") + settings
 ```
+
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link active" data-toggle="tab" href="#confmat">Confusion Matrix</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#randomforest">Random Forest</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#forestfeatures">Forest Features</a>
+  </li>
+</ul>
+
+<div id="myTabContent" class="tab-content">
+  <div class="tab-pane fade active in" id="confmat">
+  
+```{r, echo= FALSE}
+#corpus_knn %>% get_conf_mat()
+corpus_knn %>% get_conf_mat() %>% autoplot(type = "mosaic")
+#corpus_knn %>% get_conf_mat() %>% autoplot(type = "heatmap")
+# corpus_tree %>% get_pr()
+```
+
+  </div>
+
+  <div class="tab-pane fade" id="randomforest">
+
+```{r, echo=FALSE}
+workflow() %>%
+  add_recipe(corpus_recipe) %>%
+  add_model(forest_model) %>%
+  fit(corpus_features) %>%
+  pluck("fit", "fit", "fit") %>%
+  ranger::importance() %>%
+  enframe() %>%
+  mutate(name = fct_reorder(name, value)) %>%
+  ggplot(aes(name, value)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_viridis_d(
+    #begin = 0.7,
+    #end = 0.9,
+    option = "D") +
+  theme_minimal() +
+  labs(x = NULL, y = "Importance")
+```
+
+  </div>
+  
+  <div class="tab-pane fade" id="forestfeatures">
+
+```{r, echo=FALSE}
+corpus_features %>%
+  ggplot(aes(x = Streams, y = G, colour = pandemic, size = c06)) +
+  geom_point(alpha = 0.8) +
+  scale_color_viridis_d(
+     begin = 0.5,
+    end = 0.9,
+    option = "D") +
+  labs(
+    x = "Streams",
+    y = "G",
+    size = "c06",
+    colour = "Pandemic period"
+  )
+``` 
+
+  </div>
+
+</div>
 
 ***
 
-The data has been heavily shrunk in order to run the machine learning algorithms without crashing. A subset of the data containing the top 3 tracks per week are selected. This totals 336 observations that will be split across the pandemic period. This makes is possible for the algorithm to predict whether a track belongs either in the period prior COVID-19 or during. A ten fold cross validation is used.
+The data has been heavily shrunk in order to run the machine learning algorithms without crashing. A subset of the data containing the top 3 tracks per week are selected. This totals 336 observations that will be split across the pandemic period. This makes is possible for the algorithm to predict whether a track belongs either in the period prior COVID-19 or during. A ten fold cross validation is used. The algorithm is very accurate on both knn and tree methods having a **precision and recall above 90%**
 
 <h4>Confusion matrix</h4>
-The Confusion matrix show the accuracy of the algorithm predicting classifiers. In this portfolio we'd like to find out wheter we can classify songs that belong to in the period prior or during the pandemic.
+The Confusion matrix show the accuracy of the algorithm predicting classifiers. In this portfolio we'd like to find out wheter we can classify songs that belong to in the period prior or during the pandemic. Looking at the Truth and Prediction, the algorithm performs very well on the *subset data*.
 
 <h4>Random forest</h4>
 The random forest ranks the importance of the different features that can be attributed to the classification of the songs. In this case we find that the variables ***Streams, G, c06, G#|Ab, B*** are the most important in this corpus.
 
-`r knitr::kable(corpus_tree %>% get_pr())`
+**knn precision - recall**
 
 `r knitr::kable(corpus_knn %>% get_pr())`
 
-```{r, include = FALSE, cache = TRUE}
-# # USED
-# 
-# forest_model <-
-#   rand_forest() %>%
-#   set_mode("classification") %>% 
-#   set_engine("ranger", importance = "impurity")
-# corpus_forest <- 
-#   workflow() %>% 
-#   add_recipe(corpus_recipe) %>% 
-#   add_model(forest_model) %>% 
-#   fit_resamples(
-#     corpus_cv, 
-#     control = control_resamples(save_pred = TRUE)
-#   )
-```
+**tree precision - recall**
+
+`r knitr::kable(corpus_tree %>% get_pr())`
 
 ```{r, echo=FALSE}
 # #Used
@@ -2240,3 +2313,5 @@ Although similar to prior to the pandemic, we did find that people listened a bi
 
 All in all it can be concluded that the pandemic did have an impact, but at the same time the Dutch are quick to move on.
 
+
+I hope that the pandemic will be behind us in the near future, which allows us to analyze the post pandemic music listening behavior!
