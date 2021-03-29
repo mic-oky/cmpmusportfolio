@@ -22,7 +22,9 @@ output:
 <!-- Thanks for stopping by at my Computational Musicology Portfolio! Beware, the code is pretty messy at this point. -->
 
 ```{r setup, include=FALSE}
+set.seed(0)
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = T)
 
 library(tidyverse)
 library(dplyr)
@@ -378,8 +380,9 @@ corpus_df <- corpus_df %>%
     year == 2021 ~ "During COVID-19")
     )
 corpus_df <- corpus_df %>% group_by(track.uri) %>% mutate(n_weeks_corpus = n())
+corpus_df <- corpus_df %>% ungroup()
 
-#corpus_top10 <- dplyr::bind_rows(head(join_big2019, 10),head(join_big2020, 10),head(join_big2021, 10))
+corpus_top25 <- corpus_df %>% filter(Position == c(1:2))
 ```
 
 ```{r COVID-19 dataset, include = FALSE}
@@ -733,6 +736,8 @@ For example, the December Holiday season before and during the pandemic will be 
 - Week
 - Year
 
+The corpus measures from week 1, 2019 till week 7, 2021 and will split the data into two periods. A period *Before the pandemic* and *During the pandemic*. This will make it clearer to attribute analyses to these periods, rather than annually or weekly.
+
   </div>
   <div class="tab-pane fade" id="covidvariables">
 
@@ -901,7 +906,7 @@ On February 27th, 2020 (week 9), the first case of COVID-19 was confirmed in the
 Before this occurrence (when everything was still normal) from week 4 in 2020, the streams of the top songs decreased. When the first COVID-19 cases, admissions and deaths were confirmed, the number continued to decline. Until the cases started to increase more rapidly. What caused this increase?
 
 <h4>Togetherness and solidariy during lockdown</h4>
-As the situation became more severe, with record COVID-related hospital admissions in week 13, the [Dutch government implemented the first lockdown: the 'intelligent' lockdown](https://en.wikipedia.org/wiki/COVID-19_pandemic_in_the_Netherlands){target="_blank"} (first dotted line). This led to relative high public solidarity towards those affected by the virus, especially essential workers en the elderly. This may explain the sudden spike of streams. The Top 1 rose from 1,598,458 to a (2020) record 3,482,822 streams within two weeks, with the song 17 Miljoen Mensen - Live @538 in Ahoy by Davina Michelle topping the charts for five consecutive weeks. 17 Miljoen Mensen (17 Million people) [was dedicated to the people affected by the virus](https://www.ad.nl/show/davina-michelle-en-snelle-brengen-17-miljoen-mensen-uit~a9bdeb0e){target="_blank"}. So this spike is most likely related to the virus and its effects. Although during the 2nd and 3rd lockdown show an increase in streams as well, the measures may not be the cause, as it is in line with the annual trend.
+As the situation became more severe, with record COVID-related hospital admissions in week 13, the [Dutch government implemented the first lockdown: the 'intelligent' lockdown](https://en.wikipedia.org/wiki/COVID-19_pandemic_in_the_Netherlands){target="_blank"} (first dotted line). This led to relative high public solidarity towards those affected by the virus, especially essential workers en the elderly. This may explain the sudden spike of streams rising from 1,598,458 to a record 3,482,822 streams in weeks 13 and 14 in 2020. The song 17 Miljoen Mensen - Live @538 in Ahoy by Davina Michelle topped the charts for five consecutive weeks. This song [was dedicated to the people affected by the virus](https://www.ad.nl/show/davina-michelle-en-snelle-brengen-17-miljoen-mensen-uit~a9bdeb0e){target="_blank"}. So this spike is most likely related to the virus and its effects. Although during the 2nd and 3rd lockdown an increase in streams is shown as well, the measures may not be the cause as it is in line with the annual trend.
   
   </div>
   
@@ -942,7 +947,7 @@ At the same time, Dutch people 'recover' fairly quickly to the regular level. Se
 
 <!-- Frame 3 -->
 
-### 3. A trip down memory lane:<br>**What were people in the Netherlands listening to before the pandemic?**<br><br>*Note: tentative*
+### 3. Trip down memory lane:<br>**Comparing pre-pandemic to intra-pandemic listening behavior**
 
 ```{r, echo = FALSE}
 # all2019f = list()
@@ -987,46 +992,117 @@ At the same time, Dutch people 'recover' fairly quickly to the regular level. Se
 # #big_all2019 = do.call(rbind, all2019)
 
 
-sd_19 <- SharedData$new(join_big2019)
-fls <- filter_slider("ps", "Position", sd_19, "Position", step = 1)
-flc <- filter_checkbox(id = "wk", label = "Week", sharedData = sd_19, group = ~week...14, inline = TRUE)
-flc2 <- filter_checkbox(id = "md", label = "Mode", sharedData = sd_19, group = ~mode, inline = TRUE)
+# sd_19 <- SharedData$new(join_big2019)
+# fls <- filter_slider("ps", "Position", sd_19, "Position", step = 1)
+# flc <- filter_checkbox(id = "wk", label = "Week", sharedData = sd_19, group = ~week...14, inline = TRUE)
+# flc2 <- filter_checkbox(id = "md", label = "Mode", sharedData = sd_19, group = ~mode, inline = TRUE)
+# 
+# p1 <- ggplot(sd_19, aes(x = valence, y = energy, colour = week...14, label = `Track Name`, label2 = Artist)) +
+#   #geom_point(aes(size = danceability, alpha = 0.4, fill = week...14)) + 
+#   geom_point(aes(size = danceability, fill = week...14), alpha = 0.3) +  
+#   theme_light() 
+# p2 <- ggplot(sd_19, aes(x = week...14, y = valence, colour = week...14, label = `Track Name`, label2 = Artist, group = 1)) +
+#   #geom_point(aes(alpha = 0.9)) +
+#   geom_point(alpha = 0.2) +
+#   geom_line(aes(y = mean_valence, group = 1, alpha = 0.1), color = "black") +
+#   #geom_point(aes(y = mean_valence, alpha = 1)) +
+#   geom_point(aes(y = mean_valence, group = 1), shape = 22, size = 2) +
+#   labs(x = "Week") + theme_light()
+# 
+# # bscols(widths = c(2,5,5),
+# #        list(fls,
+# #             fls2,
+# #             flc,
+# #             flc2),
+# #   ggplotly(p1),
+# #   ggplotly(p2)
+# # )
+# 
+# bscols(ggplotly(p1),
+#        ggplotly(p2)
+#        )
 
-p1 <- ggplot(sd_19, aes(x = valence, y = energy, colour = week...14, label = `Track Name`, label2 = Artist)) +
-  #geom_point(aes(size = danceability, alpha = 0.4, fill = week...14)) + 
-  geom_point(aes(size = danceability, fill = week...14), alpha = 0.3) +  
-  theme_light() 
-p2 <- ggplot(sd_19, aes(x = week...14, y = valence, colour = week...14, label = `Track Name`, label2 = Artist, group = 1)) +
-  #geom_point(aes(alpha = 0.9)) +
-  geom_point(alpha = 0.2) +
-  geom_line(aes(y = mean_valence, group = 1, alpha = 0.1), color = "black") +
-  #geom_point(aes(y = mean_valence, alpha = 1)) +
+
+sd_corpus <- SharedData$new(corpus_df)
+# fls <- filter_slider("week", "week_n", sd_corpus, "week", step = 1)
+fls_1 <- filter_slider("ps", "Position", sd_corpus, "Position", step = 1)
+fls_2 <- filter_slider("streams", "Streams", sd_corpus, "Streams", step = 100000)
+flc_1 <- filter_checkbox(id = "pandemic", label = "Pandemic", sharedData = sd_corpus, group = ~pandemic, inline = TRUE)
+flc_2 <- filter_checkbox(id = "week", label = "week_n", sharedData = sd_corpus, group = ~week_n, inline = TRUE)
+
+p1 <- ggplot(sd_corpus, aes(x = valence, y = energy, colour = pandemic, label = `Track Name`, label2 = Artist)) +
+  geom_point(aes(size = danceability), alpha = 0.3) +
+  scale_color_viridis_d(
+    alpha = 0.7,
+    begin = 0.5,
+    end = 0.9,
+  ) +
+  theme_light()
+
+p2 <- ggplot(sd_corpus, aes(x = week, colour = pandemic, label = year, group = 1)) +
+  geom_line(aes(y = mean_valence, group = 1, alpha = 0.1)) +
   geom_point(aes(y = mean_valence, group = 1), shape = 22, size = 2) +
-  labs(x = "Week") + theme_light()
+  facet_grid(rows = vars(year)) +
+  scale_color_viridis_d(
+    alpha = 0.7,
+    begin = 0.5,
+    end = 0.9,
+  ) +
+  labs(x = "Week", y = "Average Valence") + theme_light()
 
-# bscols(widths = c(2,5,5),
-#        list(fls,
-#             fls2,
-#             flc,
-#             flc2),
-#   ggplotly(p1),
-#   ggplotly(p2)
-# )
+p3 <- ggplot(sd_corpus, aes(x = week, colour = pandemic, label = year, group = 1)) +
+  geom_line(aes(y = mean_streams, group = 1, alpha = 0.1)) +
+  geom_point(aes(y = mean_streams, group = 1), shape = 22, size = 2) +
+  facet_grid(rows = vars(year)) +
+  scale_color_viridis_d(
+    alpha = 0.7,
+    begin = 0.5,
+    end = 0.9,
+  ) +
+  labs(x = "Week", y = "Average Streams") + theme_light()
 
-bscols(ggplotly(p1),
-       ggplotly(p2)
-       )
+
+bscols(widths = c(6, 6),
+       ggplotly(p1),
+       list(
+         ggplotly(p2),
+         ggplotly(p3)
+       ))
 
 ```
 
 ***
 
-`r bscols(list(fls,flc,flc2))`
+```{js, echo = FALSE}
+function hideShow2() {
+  var x = document.getElementById("divID2");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+}
+```
+
+<button class="btn2" onclick="hideShow2()">Toggle Filter</button>
+
+<div id="divID2">
+
+`r bscols(list(fls_1,fls_2,flc_1,flc_2))`
+
+</div>
+
+
 
 ***
 
-A full analysis of the period before the pandemic (2019) will follow when the relevant plots are completed.
+In this frame you make week-for-week comparisons for different variables based on the period before or during the pandemic. 
 
+The interesting variables to compare the different periods are *valence* and *energy* as these reflect the valance/arousal model that shows the emotions *Happy*, *Angry*, *Sad*, *Relaxed*. 
+
+The corpus is spread fairly evenly, and both before and during the pandemic most of the Top 50 tracks are in the *Happy* quadrant. This is not very surprising, as the Top 50 usually mostly consist of pop songs.
+
+In the weekly plots it is observed that the average valence is much higher during the pandemic. And that the average weekly streams follow a similar trend, with some anomalies. These will be explored further down the line. 
 
 <!-- Frame 4 -->
 
@@ -1055,55 +1131,81 @@ names(top_tot_streams_t)[2] <- "Total Streams"
 names(top_tot_streams_t)[3] <- "Number of weeks at Top 1"
 names(top_tot_streams_t)[4] <- "Average Streams per week on Top 1"
 
-top_table <- datatable(top_tot_streams_t)
+# top_table <- datatable(top_tot_streams_t)
 
-p_t <- ggplot(comb_data_trax, aes(x = max_streams, y = fct_rev(week_year), label = factor(paste(top_track, "|", n,
-                                                                                         "weeks")))) +
-  #geom_count(aes(size = n), group = 1, stat = "identity") +
-  geom_text(aes(color = factor(top_track))) + 
-  #geom_text(aes(color = n)) +
-  #geom_text(aes(label = paste(top_track, n))) +
-  #geom_line(aes(x = max_streams, y = fct_rev(week_year)), alpha = 0.05, group = 1, size = comb_data_trax$n) +
-  geom_point(alpha = 0.2) + 
-  theme_light()   
-  #scale_color_viridis_d()
-  #scale_color_viridis_c()
+sd_top_tot <- SharedData$new(top_tot_streams_t)
+fls4_1 <- filter_slider("n_weeks", "Number of weeks at Top 1", sd_top_tot, "Number of weeks at Top 1", step = 1)
+fls4_2 <- filter_slider("tot_streams", "Total Streams", sd_top_tot, "Total Streams", step = 100000)
+fls4_3 <- filter_slider("avg_streams", "Average Streams per week on Top 1", sd_top_tot, "Average Streams per week on Top 1", step = 100000)
+flc4_1 <- filter_checkbox(id = "pandemic", label = "pandemic", sharedData = sd_top_tot, group = ~pandemic, inline = TRUE)
 
-# tabBox(width=NULL,
-#        height = 1000,
-#        title = tagList(shiny::icon("virus"),shiny::icon("spotify"),"Top Tracks"),
-#        id = "tabset2",
-#        tabPanel("Top Streams", top_table),
-#        tabPanel("Top 1 Tracks per week", ggplotly(p_t, width = 1450, height = 725))
-#        )
+# p_t <- ggplot(comb_data_trax, aes(x = max_streams, y = fct_rev(week_year), label = factor(paste(top_track, "|", n,
+#                                                                                          "weeks")))) +
+#   #geom_count(aes(size = n), group = 1, stat = "identity") +
+#   geom_text(aes(color = factor(top_track))) + 
+#   #geom_text(aes(color = n)) +
+#   #geom_text(aes(label = paste(top_track, n))) +
+#   #geom_line(aes(x = max_streams, y = fct_rev(week_year)), alpha = 0.05, group = 1, size = comb_data_trax$n) +
+#   geom_point(alpha = 0.2) + 
+#   theme_light()   
+#   #scale_color_viridis_d()
+#   #scale_color_viridis_c()
+# 
+# # tabBox(width=NULL,
+# #        height = 1000,
+# #        title = tagList(shiny::icon("virus"),shiny::icon("spotify"),"Top Tracks"),
+# #        id = "tabset2",
+# #        tabPanel("Top Streams", top_table),
+# #        tabPanel("Top 1 Tracks per week", ggplotly(p_t, width = 1450, height = 725))
+# #        )
 
 tabBox(width=NULL,
-       height = 1000,
        title = tagList(shiny::icon("virus"),shiny::icon("spotify"),"Top Tracks"),
        id = "tabset2",
-       tabPanel("Top Streams", top_table)
+       tabPanel("Top Streams", datatable(sd_top_tot))
        )
 
 ```
 
 ***
 
-In the corpus there are a total of 35 distinct tracks topping that charts in a span of 68 weeks. On average a Top 1 track remains for `r mean(top_tot_streams$number_weeks_top1)` weeks on the number 1 spot, while streamed `r round(mean(top_tot_streams$tot_streams))` times, and `r round(mean(top_tot_streams$avg_topstream_topweek))` times per week on the Top 1 spot.
+```{js, echo = FALSE}
+function hideShow3() {
+  var x = document.getElementById("divID2");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+}
+```
 
-##### The most popular track
+<button class="btn2" onclick="hideShow3()">Toggle Filter</button>
+
+<div id="divID3">
+
+`r bscols(list(fls4_1,fls4_2,fls4_3,flc4_1))`
+
+</div>
+
+In the corpus there are a total of **35 distinct tracks** topping that charts in a span of 112 weeks. On average a Top 1 track remains for `r mean(top_tot_streams$number_weeks_top1)` weeks on the number 1 spot, while streamed `r round(mean(top_tot_streams$tot_streams))` times, and `r round(mean(top_tot_streams$avg_topstream_topweek))` times per week on the Top 1 spot.
+
+<h5>The most popular track</h5>
 This gives an interesting insight to the weekly most popular songs in this corpus. But which track is the most popular? Since the corpus is time constrained, solely considering the number of streams might not show the full picture. Therefore, three variables are considered:
 
-1.	Total number of streams while on Top
-2.	Number of weeks on Top
-3.	Average streams while on Top per week on Top
+**1.	Total number of streams while on Top**
+**2.	Number of weeks on Top**
+**3.	Average streams while on Top per week on Top**
 
-The most popular song according to variable 1 is “Dance Monkey” by Tones And I, with a total of 15,872,577 streams while at number 1. The other variables (v2 = 8 weeks | v3 = 1,984,072 per week) show that the track performs above average and can indeed be considered popular.
+The most popular song according to **variable 1 is “Dance Monkey”** by Tones And I, with a total of **31,534,809 streams** while at number 1. The **other variables (v2 = 14 weeks | v3 = 2,252,486 per week)** show that **the track performs above average** and can indeed be considered popular, both before and during the pandemic.
 
-According to variable 2, “Mood (feat. iann dior)” by 24kGoldn is the most popular, topping the charts for a total of 9 weeks. The other variables (v1 = 15,498,940 | v3 = 1,722,104 per week) show that it is significantly popular under v1, but barely underperforms under v3.
+According to **variable 2**, Dance Monkey again is the most popular. But at second place, we find **“Mood (feat. iann dior)” by 24kGoldn is the most popular**, topping the charts for a total of 9 weeks. The other variables (v1 = 15,498,940 | v3 = 1,722,104 per week) show that it is significantly popular under v1, but underperforms under v3, this track is popular during the pandemic.
 
-Variable 3 shows “Tigers” by Bilal Wahib is streamed the most per week while on top with 2,652,339 streams. The track underperforms on the other variables (v1 = 5,304,679 | v2 = 2 weeks). Thus, this song can be considered a viral hit or more harshly a “one hit wonder” lasting two weeks.
+Variable 3 shows that the Euroviosion winner “Arcade” by Duncan Laurence is streamed the most per week while on top with 4,274,571 streams. The track performs above average on v1, but underperforms under v3 (v1 = 8,549,142 | v2 = 2 weeks). Winning the Eurovision (before the pandemic) cause a huge spike, but was rather temporarily.
 
-There are limitations to this approach, only the number one spots are considere. For a clearer picture,a wider range is recommended. The tracks “Dance Monkey” and “Mood” performed quite similarly. It remains difficult to denote which song is the most popular.
+During the pandemic, according to v3, “Tigers” by Bilal Wahib is streamed the most per week while at the top with 2,652,339 streams. The track underperforms on the other variables (v1 = 5,304,679 | v2 = 2 weeks). Thus, this song can be considered a viral hit or more harshly a “one hit wonder” for two weeks.
+
+There are limitations to this approach, as only the number one spots are considered. For a clearer picture, a wider range is recommended. Even considering these variables for these top songs, most perform very similarly. Thus, it remains difficult to denote which song is the most popular.
 
 <!-- Frame 5 -->
 
@@ -1218,7 +1320,7 @@ grid.arrange(miljoen_p, # First row with one plot spanning over 2 columns
   <div class="tab-pane fade active in" id="chroma">
 
 <h4>DTW and Chromagrams</h4>
-The track "17 Miljoen Mensen" (2020) is a cover of "15 Miljoen Mensen" (1996). An analysis of the chromafeatures of the two tracks aims find similarities between them. Instantly noticed differences are 17 Miljoen mensen's title adjustment for the population increase of 2 million people, and its shortness with a duration of just 1 minute and 47 seconds. But what are other differences or similarities?
+The track "17 Miljoen Mensen" (2020) is a cover of "15 Miljoen Mensen" (1996). An analysis of the chromafeatures of the two tracks aims find similarities between them. Notice the d 17 Miljoen mensen's title adjustment for the population increase of 2 million people, and its shortness with a duration of just 1 minute and 47 seconds. But what are other differences or similarities?
 
 The first plot shows the **Dynamic Time Warping** plot of the two tracks, using Euclidean norm and angular distance. A diagonal pattern would denote similarity between the two tracks. This is not observed, which implies **significant differences between the two tracks**. This is supported as the the table shows that the **pitch classes differ**. According to the Spotify API, **"17 Miljoen Mensen" is in the key of G major**, wheras **"15 Miljoen Mensen" is in the key of C major**. This is not explicitly shown, but they are represented in their respective chromagrams.
 
@@ -1852,7 +1954,7 @@ At the 75 second mark, there is a slight drop and increase in tempo. From this p
 ### 12 X
 
 ```{r, include = FALSE, cache = TRUE}
-corpus_cf <- corpus_df %>%
+corpus_cf <- corpus_top25 %>%
     add_audio_analysis()
 ```
 
@@ -1994,7 +2096,7 @@ workflow() %>%
 
 ```{r, include=FALSE, cache = TRUE}
 # corpus_features %>%
-#   ggplot(aes(x = c01, y = c07, colour = year_f, size = tempo)) +
+#   ggplot(aes(x = c01, y = c07, colour = pandemic, size = tempo)) +
 #   geom_point(alpha = 0.8) +
 #   scale_color_viridis_d() +
 #   labs(
@@ -2068,7 +2170,7 @@ The corpus has a large variety and average similarity of a Audio features, and i
 
 ```{r, echo=FALSE}
 corpus_features %>%
-  ggplot(aes(x = c01, y = c07, colour = year_f, size = tempo)) +
+  ggplot(aes(x = c01, y = c07, colour = pandemic, size = tempo)) +
   geom_point(alpha = 0.8) +
   scale_color_viridis_d() +
   labs(
