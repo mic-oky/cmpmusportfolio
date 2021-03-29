@@ -1171,7 +1171,7 @@ tabBox(width=NULL,
 
 ```{js, echo = FALSE}
 function hideShow3() {
-  var x = document.getElementById("divID2");
+  var x = document.getElementById("divID3");
   if (x.style.display === "none") {
     x.style.display = "block";
   } else {
@@ -1267,7 +1267,7 @@ miljoen_15c <- miljoen_15 %>%
     )
   ) +
   geom_tile() +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude", subtitle = "15 Miljoen Mensen (1996)") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", subtitle = "Chromagram/n15 Miljoen Mensen (1996)") +
   theme_minimal() +
   scale_fill_viridis_c()
 
@@ -1288,7 +1288,7 @@ miljoen_p <- compmus_long_distance(
   ) +
   geom_tile() +
   coord_equal() +
-  labs(x = "15 Milljoen mensen (1996)", y = "17 Miljoen mensen (2020)") +
+  labs(x = "15 Milljoen mensen (1996)", y = "17 Miljoen mensen (2020)", subtitle = "Dynamic Time Warp/n17 miljoen mensen vs. 15 mijoen mensen") +
   theme_minimal() +
   scale_fill_viridis_c(guide = NULL)
 
@@ -1740,7 +1740,7 @@ tabBox(width=NULL,
 
 While histogram doesn't show a clear/unanimous preference, the keys **C♯, F♯, G♯** consistently do have a relative high count within the corpus.
 
-In 2019, There is a clear significant higher count of **C♯, F, G, B** key.
+In 2019, There is a clear significant higher count of **C♯, F, G, B** keys.
 
 In 2020, The keys **C♯, F♯, G♯, B** have a significantly higher frequency in the corpus.
 
@@ -1939,7 +1939,7 @@ The first Tempogram doens't explicitly reflect the estimation of the Spotify API
 
 The second Tempogram (cyclic), is adjusted to represent the more 'common' tempi at which humans tap. This plot does reflect the Spotify API estimation of 112 BPM more clearly.
 
-At the 75 second mark, there is a slight drop and increase in tempo. From this point, noticable is the tape stop sound effect, which is immediately followed by the bridge. The BPM however, remains the same (try to tap along).
+At the 75 second mark, there is a slight drop and increase in tempo. From this point, noticeable is the tape stop sound effect, which is immediately followed by the bridge. The BPM however, remains the same (try to tap along).
 
 ***
 
@@ -1951,7 +1951,7 @@ At the 75 second mark, there is a slight drop and increase in tempo. From this p
 ```
 <!-- Frame 12 -->
 
-### 12 X
+### Trees and Neighbors: Applying machine learning model on corpus show there *is* a **difference between the pre-pandemic and intra-pandemic periods**.
 
 ```{r, include = FALSE, cache = TRUE}
 corpus_cf <- corpus_top25 %>%
@@ -2046,52 +2046,64 @@ corpus_tree <-
 
 ```{r, echo= FALSE}
 #corpus_knn %>% get_conf_mat()
-corpus_knn %>% get_conf_mat() %>% autoplot(type = "mosaic")
+# corpus_knn %>% get_conf_mat() %>% autoplot(type = "mosaic")
 #corpus_knn %>% get_conf_mat() %>% autoplot(type = "heatmap")
 # corpus_tree %>% get_pr()
+
+settings <- settings(dots = TRUE, adaptiveHeight = FALSE)
+
+plist <- list("plot1.png", "plot2.png", "plot3.png")
+
+slickR(plist, height = "80", width = "80%") + settings
 ```
 
 ***
 
-The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "eras" (e.g. 70's, 80'and 90's) would render better results.
+The data has been heavily shrunk in order to run the machine learning algorithms without crashing. A subset of the data containing the top 3 tracks per week are selected. This totals 336 observations that will be split across the pandemic period. This makes is possible for the algorithm to predict whether a track belongs either in the period prior COVID-19 or during. A ten fold cross validation is used.
 
-<!-- `r table(corpus_tree %>% get_pr())` -->
+<h4>Confusion matrix</h4>
+The Confusion matrix show the accuracy of the algorithm predicting classifiers. In this portfolio we'd like to find out wheter we can classify songs that belong to in the period prior or during the pandemic.
 
-<!-- `r table(corpus_knn %>% get_pr())` -->
+<h4>Random forest</h4>
+The random forest ranks the importance of the different features that can be attributed to the classification of the songs. In this case we find that the variables ***Streams, G, c06, G#|Ab, B*** are the most important in this corpus.
 
-<!-- Frame 13 -->
+`r knitr::kable(corpus_tree %>% get_pr())`
 
-### 12 X
+`r knitr::kable(corpus_knn %>% get_pr())`
 
 ```{r, include = FALSE, cache = TRUE}
-forest_model <-
-  rand_forest() %>%
-  set_mode("classification") %>% 
-  set_engine("ranger", importance = "impurity")
-corpus_forest <- 
-  workflow() %>% 
-  add_recipe(corpus_recipe) %>% 
-  add_model(forest_model) %>% 
-  fit_resamples(
-    corpus_cv, 
-    control = control_resamples(save_pred = TRUE)
-  )
+# # USED
+# 
+# forest_model <-
+#   rand_forest() %>%
+#   set_mode("classification") %>% 
+#   set_engine("ranger", importance = "impurity")
+# corpus_forest <- 
+#   workflow() %>% 
+#   add_recipe(corpus_recipe) %>% 
+#   add_model(forest_model) %>% 
+#   fit_resamples(
+#     corpus_cv, 
+#     control = control_resamples(save_pred = TRUE)
+#   )
 ```
 
 ```{r, echo=FALSE}
-workflow() %>% 
-  add_recipe(corpus_recipe) %>% 
-  add_model(forest_model) %>% 
-  fit(corpus_features) %>% 
-  pluck("fit", "fit", "fit") %>%
-  ranger::importance() %>% 
-  enframe() %>% 
-  mutate(name = fct_reorder(name, value)) %>% 
-  ggplot(aes(name, value)) + 
-  geom_col() + 
-  coord_flip() +
-  theme_minimal() +
-  labs(x = NULL, y = "Importance")
+# #Used
+# 
+# workflow() %>% 
+#   add_recipe(corpus_recipe) %>% 
+#   add_model(forest_model) %>% 
+#   fit(corpus_features) %>% 
+#   pluck("fit", "fit", "fit") %>%
+#   ranger::importance() %>% 
+#   enframe() %>% 
+#   mutate(name = fct_reorder(name, value)) %>% 
+#   ggplot(aes(name, value)) + 
+#   geom_col() + 
+#   coord_flip() +
+#   theme_minimal() +
+#   labs(x = NULL, y = "Importance")
 ```
 
 ```{r, include=FALSE, cache = TRUE}
@@ -2144,13 +2156,7 @@ workflow() %>%
 #   ggdendrogram()
 ```
 
-***
-
-The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "era's" (e.g. 70's, 80'and 90's) would render better results.
-
 <!-- Frame 14 -->
-
-### 12 X
 
 ```{r, include = FALSE, cache = TRUE}
 # workflow() %>% 
@@ -2169,16 +2175,16 @@ The corpus has a large variety and average similarity of a Audio features, and i
 ```
 
 ```{r, echo=FALSE}
-corpus_features %>%
-  ggplot(aes(x = c01, y = c07, colour = pandemic, size = tempo)) +
-  geom_point(alpha = 0.8) +
-  scale_color_viridis_d() +
-  labs(
-    x = "Timbre Component 1",
-    y = "Timbre Component 7",
-    size = "Tempo",
-    colour = "Year"
-  )
+# corpus_features %>%
+#   ggplot(aes(x = c06, y = c10, colour = pandemic, size = Streams)) +
+#   geom_point(alpha = 0.8) +
+#   scale_color_viridis_d() +
+#   labs(
+#     x = "Timbre Component 6",
+#     y = "Timbre Component 10",
+#     size = "Number of Streams",
+#     colour = "Pandemic period"
+#   )
 ``` 
 
 
@@ -2217,10 +2223,20 @@ corpus_features %>%
 #   dendro_data() %>%
 #   ggdendrogram()
 ```
-***
 
-The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "era's" (e.g. 70's, 80'and 90's) would render better results.
+### End of the road: **Long term pandemic *does* have impact, but short term.** Not enough to change listening behavior.
 
-### Conclusion
+<h4>Conclusion</h4>
 
-Conclusion
+We've seen that the pandemic did have a significant effect on society. 
+This was also reflected in the spikes of the number of streams for *specific tracks*, explicitly shown in the earlier plots by the following.
+- Togetherness and solidarity at the *beginning* of the pandemic
+- Earlier and longer Christmas
+
+We've seen that Dutch spotify users have a relative **quick reaction time** for a **short period**, this holds for the periods **before and during the pandemic**. This was clearly seen in the *Eurovision* and *17 Miljoen Mensen* examples. This has hasn't changed, this is also reflected that the subsequent coronawaves did not meet similar solidarity as the first. 
+
+However on average, the number streams remained fairly stable.
+Although similar to prior to the pandemic, we did find that people listened a bit more to 'happier' music. Interestingly this phenomenon combined with the fact the people tend to be "*coronamoe/corona fatigue*" [explains that people in the Netherlands are happier despite the pandemic](https://www.volkskrant.nl/nieuws-achtergrond/zijn-we-corona-moe-vast-toch-zijn-meer-nederlanders-blijer-met-hun-leven-dan-in-2019~b52dc4d7/){target="_blank"}.
+
+All in all it can be concluded that the pandemic did have an impact, but at the same time the Dutch are quick to move on.
+
