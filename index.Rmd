@@ -1,7 +1,8 @@
 ---
-title: "Computational Musicology Portfolio"
+title: "The sound of COVID-19"
+subtitle: "Analysis"
 author: "Michael Okyere"
-date: "10-2-2021"
+date: "Block 4, 2021"
 #output: html_document
 output: 
   flexdashboard::flex_dashboard:
@@ -14,10 +15,11 @@ output:
     source_code: "https://github.com/mic-oky/cmpmusportfolio"
     target: _blank
     #social: [ "linkedin" ]
+    css: custom-styles.css
 #runtime: shiny
 ---
 
-<!-- Thanks for stopping by at my Computational Musicology Portfolio! Beware, the code is pretty messy at this point -->
+<!-- Thanks for stopping by at my Computational Musicology Portfolio! Beware, the code is pretty messy at this point. -->
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -51,148 +53,6 @@ library(patchwork)
 
 Sys.setlocale(category = "LC_ALL", locale = "English_United States.1252")
 options(scipen = 999, encoding = "UTF-8")
-```
-
-```{css style, echo = FALSE}
-.navbar-inverse {
-    background-color: rgba(29, 185, 84, 1);
-    #background-color: #1a242f;
-    border-color: transparent;
-}
-
-.section.sidebar {
-  top: 60px;
-  background-color: rgba(29, 185, 84, 1);
-}
-
-.bg-success {
-  background-color: rgba(29, 185, 84, 1);
-}
-
-.bg-primary {
-  background-color: rgba(191, 191, 191, 0.7);
-}
-
-.storyboard-nav .sbframelist { 
-  overflow : scroll; 
-}
-
-.storyboard-nav .sbframelist ul li {
-  transition: 0.3s;
-}
-
-.storyboard-nav .sbframelist ul li.active {
-  transition: 0.3s;
-}
-
-.storyboard-nav .sbframelist ul li.active {
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(29, 185, 84, 0.8);
-  background-image: url('icons/COVIDW/COVID-19.png');
-  background-repeat: no-repeat;
-  background-position: 130% -310%;
-  background-size: auto;
-  background-blend-mode: soft-light;
-}
-
-
-
-.storyboard-nav .sbframelist ul li:hover {
-  background-color: rgba(47, 71, 79, 0.7) !important;
-  color: white;
-}
-
-.storyboard-nav .sbframelist ul li.active:hover {
-  #background-color: rgba(44, 62, 80, 0.7);
-  #background-color: #3e8e41;
-  background-color: rgba(29, 185, 84, 1) !important;
-  color: white;
-  #background-image: url('icons/COVIDW/COVID-19.png');
-  background-image: url('icons/COVIDB/COVID-19.png');
-  background-repeat: no-repeat;
-  background-position: 130% -310%;
-  background-size: auto;
-  background-blend-mode: soft-light;
-}
-
-
-# tabBox
-
-.nav-tabs-custom > .nav-tabs > li.active {
-    background-color: rgba(29, 185, 84, 1) !important;
-    color: #fff;
-    # font-weight: 300;
-    # font-size: 14px;
-    # border-radius: 0;
-    # padding: 3px 10px 5px;
-    # text-transform: none;
-
-.nav-tabs-custom > .nav-tabs > li:hover > a {
-    background-color: rgba(47, 71, 79, 0.7) !important;
-    color: #fff;
-    # font-weight: 300;
-    # font-size: 14px;
-    # border-radius: 0;
-    # padding: 3px 10px 5px;
-    # text-transform: none;
-}
-
-.nav-tabs-custom > .nav-tabs > li.active > a {
-    background-color: rgba(29, 185, 84, 0.7) !important;
-    color: #fff;
-    # font-weight: 300;
-    # font-size: 14px;
-    # border-radius: 0;
-    # padding: 3px 10px 5px;
-    # text-transform: none;
-}
-
-.nav-tabs-custom > .nav-tabs > li.active:hover > a {
-    background-color: rgba(29, 185, 84, 1) !important;
-    color: #fff;
-    # font-weight: 300;
-    # font-size: 14px;
-    # border-radius: 0;
-    # padding: 3px 10px 5px;
-    # text-transform: none;
-}
-
-
-# Details drop down
-details[open] > summary:first-of-type {
-    list-style-type: disclosure-open;
-}
-
-details > summary:first-of-type {
-    display: list-item;
-    counter-increment: list-item 0;
-    list-style: inside disclosure-closed;
-    list-style-position: inside;
-    list-style-image: initial;
-    list-style-type: disclosure-closed;
-}
-
-:focus {
-    outline: -webkit-focus-ring-color auto 1px;
-    outline-color: -webkit-focus-ring-color;
-    outline-style: auto;
-    outline-width: 1px;
-}
-
-summary {
-    display: block !important;
-}
-
-details[open] ul li {
-    
-}
-
-summary:hover {
-    background-color: rgba(29, 185, 84, 1) !important;
-    color: white;
-    transition: 0.3s;
-}
-
 ```
 
 <!-- Code for corpus -->
@@ -381,6 +241,13 @@ data2021 <- cbind(week_year = str_remove(sorted_weeks2021, "_2021"),fdata2021, s
 
 dataAll <- dplyr::bind_rows(data2019, data2020, data2021)
 
+# Add pandemic label
+dataAll <- dataAll %>%
+  mutate(pandemic = case_when(
+    year == 2019 ~ "Before COVID-19",
+    year == 2020 & week_year == week_year[53:60]  ~ "Before COVID-19",
+    TRUE ~ "During COVID-19")
+  )
 
 ```
 
@@ -499,7 +366,20 @@ join_big2020 <- dplyr::bind_cols(big_all2020f, big_all2020)
 join_big2021 <- dplyr::bind_cols(big_all2021f, big_all2021)
 
 corpus_df <- dplyr::bind_rows(join_big2019,join_big2020,join_big2021)
-corpus_top10 <- dplyr::bind_rows(head(join_big2019, 10),head(join_big2020, 10),head(join_big2021, 10))
+corpus_df <- corpus_df %>% 
+  rename(year = year...13, week = week...14) %>%
+  # Delete duplicate year and week columns
+  select(-c(year...32, week...33)) %>%
+  mutate(week_n = as.numeric(week)) %>%
+  mutate(pandemic = case_when(
+    year == 2019 ~ "Before COVID-19",
+    year == 2020 & week_n == c(1:8) ~ "Before COVID-19",
+    year == 2020 & week_n != c(1:8) ~ "During COVID-19",
+    year == 2021 ~ "During COVID-19")
+    )
+corpus_df <- corpus_df %>% group_by(track.uri) %>% mutate(n_weeks_corpus = n())
+
+#corpus_top10 <- dplyr::bind_rows(head(join_big2019, 10),head(join_big2020, 10),head(join_big2021, 10))
 ```
 
 ```{r COVID-19 dataset, include = FALSE}
@@ -683,324 +563,155 @@ get_pr <- function(fit) {
 
 <!-- Page 1 (additional pages (optional) can add extra frames) -->
 
-<!-- Frame 12 -->
-
-### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>12.1 Is it **impossible to predict** whether a track was in the charts **before or during the pandemic**.
-
-```{r, include = FALSE, cache = TRUE}
-corpus_features <-
-    corpus_top10 %>%  # For your portfolio, change this to the name of your corpus.
-    add_audio_analysis() %>% 
-    mutate(
-        year_f = factor(year...13),
-        segments = map2(segments, key, compmus_c_transpose),
-        pitches =
-            map(
-                segments,
-                compmus_summarise, pitches,
-                method = "mean", norm = "manhattan"
-            ),
-        timbre =
-            map(
-                segments,
-                compmus_summarise, timbre,
-                method = "mean",
-            )
-    ) %>%
-    mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
-    mutate_at(vars(pitches, timbre), map, bind_rows) %>%
-    unnest(cols = c(pitches, timbre))
-```
-
-```{r, include = FALSE, cache = TRUE}
-corpus_recipe <-
-  recipe(
-    year_f ~
-      danceability +
-      energy +
-      loudness +
-      speechiness +
-      acousticness +
-      instrumentalness +
-      liveness +
-      valence +
-      tempo +
-      duration +
-      C + `C#|Db` + D + `D#|Eb` +
-      E + `F` + `F#|Gb` + G +
-      `G#|Ab` + A + `A#|Bb` + B +
-      c01 + c02 + c03 + c04 + c05 + c06 +
-      c07 + c08 + c09 + c10 + c11 + c12,
-    data = corpus_features,          # Use the same name as the previous block.
-  ) %>%
-  step_center(all_predictors()) %>%
-  step_scale(all_predictors())      # Converts to z-scores.
-  # step_range(all_predictors())    # Sets range to [0, 1].
-```
-
-```{r, include=FALSE, cache = TRUE}
-corpus_cv <- corpus_features %>% vfold_cv(10)
-
-knn_model <-
-  nearest_neighbor(neighbors = 1) %>%
-  set_mode("classification") %>% 
-  set_engine("kknn")
-corpus_knn <- 
-  workflow() %>% 
-  add_recipe(corpus_recipe) %>% 
-  add_model(knn_model) %>% 
-  fit_resamples(
-    corpus_cv, 
-    control = control_resamples(save_pred = TRUE)
-  )
-``` 
-
-```{r, include=FALSE, cache = TRUE}
-tree_model <-
-  decision_tree() %>%
-  set_mode("classification") %>% 
-  set_engine("C5.0")
-corpus_tree <- 
-  workflow() %>% 
-  add_recipe(corpus_recipe) %>% 
-  add_model(tree_model) %>% 
-  fit_resamples(
-    corpus_cv, 
-    control = control_resamples(save_pred = TRUE)
-  )
-``` 
-
-```{r, echo= FALSE}
-#corpus_knn %>% get_conf_mat()
-corpus_knn %>% get_conf_mat() %>% autoplot(type = "mosaic")
-#corpus_knn %>% get_conf_mat() %>% autoplot(type = "heatmap")
-# corpus_tree %>% get_pr()
-```
-
-***
-
-The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "era's" (e.g. 70's, 80'and 90's) would render better results.
-
-<!-- `r table(corpus_tree %>% get_pr())` -->
-
-<!-- `r table(corpus_knn %>% get_pr())` -->
-
-<!-- Frame 13 -->
-
-### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>12.2 Is it **impossible to predict** whether a track was in the charts **before or during the pandemic**.
-
-```{r, include = FALSE, cache = TRUE}
-forest_model <-
-  rand_forest() %>%
-  set_mode("classification") %>% 
-  set_engine("ranger", importance = "impurity")
-corpus_forest <- 
-  workflow() %>% 
-  add_recipe(corpus_recipe) %>% 
-  add_model(forest_model) %>% 
-  fit_resamples(
-    corpus_cv, 
-    control = control_resamples(save_pred = TRUE)
-  )
-```
-
-```{r, echo=FALSE}
-workflow() %>% 
-  add_recipe(corpus_recipe) %>% 
-  add_model(forest_model) %>% 
-  fit(corpus_features) %>% 
-  pluck("fit", "fit", "fit") %>%
-  ranger::importance() %>% 
-  enframe() %>% 
-  mutate(name = fct_reorder(name, value)) %>% 
-  ggplot(aes(name, value)) + 
-  geom_col() + 
-  coord_flip() +
-  theme_minimal() +
-  labs(x = NULL, y = "Importance")
-```
-
-```{r, include=FALSE, cache = TRUE}
-# corpus_features %>%
-#   ggplot(aes(x = c01, y = c07, colour = year_f, size = tempo)) +
-#   geom_point(alpha = 0.8) +
-#   scale_color_viridis_d() +
-#   labs(
-#     x = "Timbre Component 1",
-#     y = "Timbre Component 7",
-#     size = "Tempo",
-#     colour = "Year"
-#   )
-``` 
-
-
-```{r, include=FALSE}
-# corpus_juice <-
-#   recipe(
-#     `Track Name` ~
-#       danceability +
-#       energy +
-#       loudness +
-#       speechiness +
-#       acousticness +
-#       instrumentalness +
-#       liveness +
-#       valence +
-#       tempo +
-#       duration_minute, # +
-#       # C + `C#|Db` + D + `D#|Eb` +
-#       # E + `F` + `F#|Gb` + G +
-#       # `G#|Ab` + A + `A#|Bb` + B +
-#       # c01 + c02 + c03 + c04 + c05 + c06 +
-#       # c07 + c08 + c09 + c10 + c11 + c12,
-#     data = corpus_top10
-#   ) %>%
-#   step_center(all_predictors()) %>%
-#   step_scale(all_predictors()) %>% 
-#   # step_range(all_predictors()) %>% 
-#   prep(corpus_top10 %>% mutate(track.name = str_trunc(`Track Name`, 20))) %>%
-#   juice() %>%
-#   column_to_rownames("Track Name")
-# 
-# corpus_dist <- dist(corpus_juice, method = "euclidean")
-# 
-# corpus_dist %>% 
-#   hclust(method = "single") %>% # Try single, average, and complete.
-#   dendro_data() %>%
-#   ggdendrogram()
-```
-***
-
-The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "era's" (e.g. 70's, 80'and 90's) would render better results.
-
-<!-- Frame 14 -->
-
-### `r shiny::icon("exclamation-triangle")` ***NEW!***<br>12.3 Is it **impossible to predict** whether a track was in the charts **before or during the pandemic**.
-
-```{r, include = FALSE, cache = TRUE}
-# workflow() %>% 
-#   add_recipe(corpus_recipe) %>% 
-#   add_model(forest_model) %>% 
-#   fit(corpus_features) %>% 
-#   pluck("fit", "fit", "fit") %>%
-#   ranger::importance() %>% 
-#   enframe() %>% 
-#   mutate(name = fct_reorder(name, value)) %>% 
-#   ggplot(aes(name, value)) + 
-#   geom_col() + 
-#   coord_flip() +
-#   theme_minimal() +
-#   labs(x = NULL, y = "Importance")
-```
-
-```{r, echo=FALSE}
-corpus_features %>%
-  ggplot(aes(x = c01, y = c07, colour = year_f, size = tempo)) +
-  geom_point(alpha = 0.8) +
-  scale_color_viridis_d() +
-  labs(
-    x = "Timbre Component 1",
-    y = "Timbre Component 7",
-    size = "Tempo",
-    colour = "Year"
-  )
-``` 
-
-
-```{r, include=FALSE}
-# corpus_juice <-
-#   recipe(
-#     `Track Name` ~
-#       danceability +
-#       energy +
-#       loudness +
-#       speechiness +
-#       acousticness +
-#       instrumentalness +
-#       liveness +
-#       valence +
-#       tempo +
-#       duration_minute, # +
-#       # C + `C#|Db` + D + `D#|Eb` +
-#       # E + `F` + `F#|Gb` + G +
-#       # `G#|Ab` + A + `A#|Bb` + B +
-#       # c01 + c02 + c03 + c04 + c05 + c06 +
-#       # c07 + c08 + c09 + c10 + c11 + c12,
-#     data = corpus_top10
-#   ) %>%
-#   step_center(all_predictors()) %>%
-#   step_scale(all_predictors()) %>% 
-#   # step_range(all_predictors()) %>% 
-#   prep(corpus_top10 %>% mutate(track.name = str_trunc(`Track Name`, 20))) %>%
-#   juice() %>%
-#   column_to_rownames("Track Name")
-# 
-# corpus_dist <- dist(corpus_juice, method = "euclidean")
-# 
-# corpus_dist %>% 
-#   hclust(method = "single") %>% # Try single, average, and complete.
-#   dendro_data() %>%
-#   ggdendrogram()
-```
-***
-
-The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "era's" (e.g. 70's, 80'and 90's) would render better results.
-
 <!-- Frame 1 -->
 
-### 1. **Did Spotify users in the Netherlands change their music listening behavior during the COVID-19 pandemic?**
+### 1. **Did Spotify users in the Netherlands change their music listening behavior during the COVID-19 pandemic?**{data-commentary-width=500} 
 
-#### **Computational Musicology Portfolio**
+<h4>The sound of COVID-19: Spotify usage in the Netherlands during a pandemic</h4>
 
-The COVID-19 pandemic has stirred society up by quite large margin. Many people are (in)directly by the health crisis or the resulting governmental measures. Leading to societal adjustments, e.g. social distancing and isolation, causing society to change communication, work and more aspects of daily life. This dashboard will explore the main question below.
+The COVID-19 pandemic has stirred society up by quite large margin. Many people are (in)directly affected by the health crisis or the resulting governmental measures.
+This led to adjustments, e.g. social distancing and isolation, causing society to change communication, work and more aspects of daily life. This dashboard will explore the following:
 
 > Did Spotify users in the Netherlands change their music listening behavior during the COVID-19 pandemic?
 
-A corpus has been be created to perform various computational musicological analyses using the [spotifyr](https://www.rcharlie.com/spotifyr/){target="_blank"} and [compmus](https://jaburgoyne.github.io/compmus/){target="_blank"} packages. 
-The listening behavior of Spotify users in the Netherlands before and during the COVID-19 pandemic will be considered, as measured by the Spotify API. In addition, specific events and times will be highlighted in order to find out to what extent changes in listening behavior can be attributed to these events (e.g. lockdown and curfew).
+A corpus has been created in order to perform various computational musicological analyses using the [spotifyr](https://www.rcharlie.com/spotifyr/){target="_blank"} and [compmus](https://jaburgoyne.github.io/compmus/){target="_blank"} packages.
 
-**Corpus**
+The general listening behavior of Spotify users in the Netherlands before and during the pandemic will be explored, as measured by the Spotify API. In addition, specific events related to the pandemic (e.g. lockdown and curfew) will be considered as well to find to what extent possible changes in listening behavior can be attributed to these events.
 
-In order to analyze general listening behavior, the most important variables for the analyses are:
+<h4>Corpus</h4>
+
+In order to analyze general listening behavior, the most important variables for the portfolio are:
 
 - Playlist
 - Spotify Audio Features
 - Time
 - [COVID-19 variables provided by RIVM (The Dutch National Institute for Public Health and the Environment)](https://data.rivm.nl/covid-19/){target="_blank"}
 
-**Playlist**
+***
 
-In order to keep track on the average listening behavior of Dutch Spotify users, the weekly ‘Top 50’ and ‘Viral 50’ playlists from the Netherlands will be analyzed over time. The year 2019 will be measured from week 45, the year 2020 in its entirety, and 2021 is measured until week 7.
+```{js, echo = FALSE}
+function hideShow() {
+  var x = document.getElementById("divID");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+}
+```
 
-Thus,<br>
-2019 contains 8 playlists consisting of 50 observations (tracks)<br>
-2020 contains 53 playlists consisting of 50 observations (tracks)<br>
-2021 contains 7 playlists consisting of 50 observations (tracks)
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link active" data-toggle="tab" href="#playlist">Playlist</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#spotifyaudiofeatures">Audio Features</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#time">Time</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#covidvariables">COVID-19 Variables</a>
+  </li>
+</ul>
+
+<div id="myTabContent" class="tab-content">
+  <div class="tab-pane fade active in" id="playlist">
+  
+In order to keep track on the average listening behavior of Dutch Spotify users, the weekly ‘Top 50’ playlists from the Netherlands will be analyzed over time. The years 2019 (52 weeks) and 2020 (53 weeks) and will be measured in its entirety, and 2021 is measured until week 7.
+
+2019 contains 52 playlists consisting of 50 tracks per playlist <br>
+2020 contains 53 playlists consisting of 50 tracks per playlist<br>
+2021 contains 7 playlists consisting of 50 tracks per playlist
+Totaling 5600 observations/tracks.
+As a track can be in the charts for multiple weeks, duplicates occur.
+The number of *unique* tracks within the corpus is 826.
 
 Since Spotify autoupdates their playlists, the historical 'Top 50' lists in the form of CSV files will be retrieved from [Spotify Charts](https://spotifycharts.com/regional/nl/weekly/latest){target="_blank"}.
-
-**Spotify Audio Features**
+  
+  </div>
+  <div class="tab-pane fade" id="spotifyaudiofeatures">
 
 The changes of (or lack thereof) listening behavior will be measured by the the different Spotify Audio Features:
 
+  <button class="btn2" onclick="hideShow()">Spotify Audio Features:</button>
+
+  <div id="divID">
+  
 <details>
+<summary>• danceability</summary>
+Danceability describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.
 
-<summary>**▶ Spotify Audio Features:**</summary>
+</details>
 
-- danceability
-- energy
-- key
-- loudness
-- mode
-- speechiness
-- acousticness
-- instrumentalness
-- liveness
-- valence
-- tempo
-- duration_ms
+<details>
+<summary>• energy</summary>
+Energy is a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale. Perceptual features contributing to this attribute include dynamic range, perceived loudness, timbre, onset rate, and general entropy.
 
-Also the following features obtained through the Spotify API will be analyzed:
+</details>
+
+<details>
+<summary>• key</summary>
+The key the track is in. Integers map to pitches using standard Pitch Class notation . E.g. 0 = C, 1 = C♯/D♭, 2 = D, and so on.
+
+</details>
+
+<details>
+<summary>• loudness</summary>
+The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typical range between -60 and 0 db.
+
+</details>
+
+<details>
+<summary>• mode</summary>
+Mode indicates the modality (major or minor) of a track, the type of scale from which its melodic content is derived. Major is represented by 1 and minor is 0.
+
+</details>
+
+<details>
+<summary>• speechiness</summary>
+Speechiness detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. Values above 0.66 describe tracks that are probably made entirely of spoken words. Values between 0.33 and 0.66 describe tracks that may contain both music and speech, either in sections or layered, including such cases as rap music. Values below 0.33 most likely represent music and other non-speech-like tracks.
+
+</details>
+
+<details>
+<summary>• acousticness</summary>
+A confidence measure from 0.0 to 1.0 of whether the track is acoustic. 1.0 represents high confidence the track is acoustic.
+
+</details>
+
+<details>
+<summary>• instrumentalness</summary>
+Predicts whether a track contains no vocals. “Ooh” and “aah” sounds are treated as instrumental in this context. Rap or spoken word tracks are clearly “vocal”. The closer the instrumentalness value is to 1.0, the greater likelihood the track contains no vocal content. Values above 0.5 are intended to represent instrumental tracks, but confidence is higher as the value approaches 1.0.
+
+</details>
+
+<details>
+<summary>• liveness</summary>
+Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
+
+</details>
+
+<details>
+<summary>• tempo</summary>
+The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
+
+</details>
+
+<details>
+<summary>• valence</summary>
+A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).
+
+</details>
+
+<details>
+<summary>• duration_ms</summary>
+The duration of the track in milliseconds.
+
+</details>
+
+
+Also the following variables obtained through the Spotify API will be included:
 
 - Number of streams
 - Position
@@ -1008,29 +719,230 @@ Also the following features obtained through the Spotify API will be analyzed:
 - Artist
 - Streams
 
-</details>
+  </div>
 
-The mean of each variable of the 50 tracks will be calculated, outliers and other interesting tracks in the dataset will be highlighted as well.
+  </div>
+  
+  <div class="tab-pane fade" id="time">
 
-**Time**
+The variable time will be used to identify the different weeks as well as the periods before and during the pandemic that may explain the changes in music listening behavior from the top and viral playlists.
 
-The variable time will be used to identify the different weeks as well as the periods before and during the pandemic that may explain the changes in music listening behavior from the top and viral playlists. In addition interesting annual periods will be isolated to see if similar patterns reoccur during the pandemic.For example, the December Holiday season before and during the pandemic will be analyzed to identify whether Spotify users altered their Christmas related listening behavior.
+In addition interesting annual periods will be isolated to see if similar patterns reoccur during the pandemic.
+For example, the December Holiday season before and during the pandemic will be analyzed to identify whether Spotify users altered their Christmas related listening behavior.
 
 - Week
 - Year
 
-**COVID-19 variables**
+  </div>
+  <div class="tab-pane fade" id="covidvariables">
 
-Alongside the musical analyses the statistics concerning COVID-19 will be taken into account. The data is provided by the The Dutch National Institute for Public Health and the Environment (RIVM). The data has been pre-processed to include weekly and cumulative data. The variables that are included in this dashboard are the following variables:
+Alongside the musical analyses, statistics concerning COVID-19 will be taken into account as well.
+The used data is provided by the The Dutch National Institute for Public Health and the Environment (RIVM). The data has been pre-processed to include both weekly and cumulative data. The variables that are included in this dashboard are the following variables:
 
-- Hospital Admissions
-- Number of deaths
+- Number Hospital Admissions
+- Number of Deaths
 - Reported cases of COVID-19
 
+  </div>
+</div>
 
 <!-- Frame 2 -->
 
-### 2. A trip down memory lane:<br>**What were people in the Netherlands listening to before the pandemic?**<br><br>*Note: tentative*
+### 2. **COVID-19 & Music trends**: Music trends show **periodical pattern**, COVID-19 has **societal impact**. 
+
+```{r, echo = FALSE}
+
+comb_data.long <- melt(comb_data, id.vars = c("week", "year...27", "week_year", "max_streams", "min_streams", "mean_streams", "top_track", "total_reported", "deceased", "hospital_admission"), measure.vars = c("deceased", "hospital_admission"))
+
+# comb_data.long <- melt(comb_data, id.vars = c("week", "year", "week_year", "max_streams", "min_streams", "mean_streams", "top_track"), measure.vars = c("deceased", "hospital_admission"))
+
+coeff <- 1000
+
+#p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min_streams, label3 = top_track)) +
+p <- ggplot(comb_data.long, aes(text = paste('Week, Year:', paste(week,"",year...27),
+                                              '<br>Top Track:', top_track, 
+                                              '<br>Max Streams:', max_streams,
+                                              '<br>Average Streams:', mean_streams,
+                                              '<br>Number Deceased:', deceased,
+                                              '<br>Number Admitted:', hospital_admission,
+                                              '<br>Number Confirmed Cases:', total_reported))) +
+  geom_line(aes(x = factor(week_year), y = max_streams/coeff, group = 1, color = "Streams Top 1 track"),
+            alpha = 0.7, size = 1) +
+  geom_point(aes(x = week_year, y = max_streams/coeff, color = "Streams Top 1 track" ), group = 1, alpha = 1, size = 1) +
+  geom_line(aes(x = factor(week_year), y = mean_streams/coeff, group = 2, color = "Average Streams of Top 50"),
+            alpha = 0.7, size = 1) +
+  geom_point(aes(x = week_year, y = mean_streams/coeff, color = "Average Streams of Top 50"), group = 2, alpha = 1, size = 1) +
+  geom_bar(aes(x = week_year, y = value, fill = variable), stat = "identity") +
+  
+  geom_vline(xintercept = 64, linetype="dotted", size = 0.5, alpha = 0.5) +
+    annotate("text", label = "<b>1st lockdown</b>\n'Intelligent'\nLockdown", x = 63, y = 4500, size = 3) +
+
+  geom_vline(xintercept = 94, linetype="dotted", size = 0.5, alpha = 0.5) +
+    annotate("text", label = "<b>2nd lockdown</b>\nPartial\nLockdown", x = 92, y = 4000, size = 3) +
+
+  geom_vline(xintercept = 103, linetype="dotted", size = 0.5, alpha = 0.5) +
+    annotate("text", label = "<b>3rd lockdown</b>\nHard\nLockdown", x = 101, y = 4500, size = 3) +
+
+  geom_vline(xintercept = 107, linetype="dotted", size = 0.5, alpha = 0.5) +
+    annotate("text", label = "Curfew", x = 105, y = 4000, size = 3) +
+
+  scale_color_manual(name = "Variables", values = c("Streams Top 1 track" = "#33618d",
+                                                    "Average Streams of Top 50" = "#440d57")) +
+  
+  scale_x_discrete(label=function(x){
+    return(str_replace(x,"_20","\n'"))
+    }) +
+  
+  scale_y_continuous(
+    
+    name = "Number of Hospitalized and Deceased\nNumber of Streams: Average & Top 1 Track (*1,000)",
+    
+    # Add a second axis and specify its features
+    #sec.axis = sec_axis(trans = ~ . * coeff, name="Number of Streams of Top 1 track")
+    expand = expansion(mult = c(0, 0))
+  )+
+  
+   # scale_color_viridis_d(
+   #  begin = 0,
+   #  end = 0.3,
+   #  option = "B",
+   #  alpha = 0.75,
+   #  guide = NULL,
+   #  direction = 1
+   #  ) +
+  
+  scale_fill_viridis_d(
+    begin = 0.7,
+    end = 0.9,
+    option = "D",
+    alpha = 0.75,
+    guide = NULL,
+    direction = -1,
+    name = "Variables",
+    labels = c("Deceased", "Hospital admissions")
+    ) +
+  
+  theme_light() +
+  labs(
+    x = "Week, Year",
+    title = "Spotify and Covid trends",
+    subtitle = "Trends from 2019 to 2021"
+  ) +
+
+  theme(axis.title.y = element_text(size=13),
+        axis.title.y.right = element_text(size=13),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
+        )
+
+
+l1 <- list(
+  source=base64enc::dataURI(file = "icons/House-lockdown (1).png"),
+  x = 62.5, y = 1, sizex = 3, sizey = 0.05,
+  xref = "x", yref = "paper",
+  xanchor = "left", yanchor = "bottom"
+  )
+l2 <- list(
+  source=base64enc::dataURI(file = "icons/House-lockdown (1).png"),
+  x = 92.5, y = 1, sizex = 3, sizey = 0.05,
+  xref = "x", yref = "paper",
+  xanchor = "left", yanchor = "bottom"
+  )
+l3 <- list(
+  source=base64enc::dataURI(file = "icons/House-lockdown (1).png"),
+  x = 101.5, y = 1, sizex = 3, sizey = 0.05,
+  xref = "x", yref = "paper",
+  xanchor = "left", yanchor = "bottom"
+  )
+l3cf <- list(
+  source=base64enc::dataURI(file = "icons/Time (1).png"),
+  x = 105.5, y = 1, sizex = 3, sizey = 0.05,
+  xref = "x", yref = "paper",
+  xanchor = "left", yanchor = "bottom"
+  )
+
+p2_ly <- ggplotly(p, tooltip = "text", dynamicTicks = FALSE) %>%
+  add_lines() %>%
+  layout(legend = list(x = 1, y = 1)) %>%
+  rangeslider(start = str_replace("45_2019","_20","\n'"), end = str_replace("6_2021","_20","\n'")) %>%
+  rangeslider(start = 10, end = 113) %>%
+  layout(images = list(l1,l2,l3,l3cf))
+
+for (i in 1:length(p2_ly$x$data)){
+    if (!is.null(p2_ly$x$data[[i]]$name)){
+        p2_ly$x$data[[i]]$name =  gsub("\\(","",str_split(p2_ly$x$data[[i]]$name,",")[[1]][1])
+    }
+}
+
+p2_ly
+
+```
+
+
+***
+
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link active" data-toggle="tab" href="#covid">COVID</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#outliers">Trends & Outliers</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#conclusion">Conclusion</a>
+  </li>
+</ul>
+
+
+<div id="myTabContent" class="tab-content">
+  <div class="tab-pane fade active in" id="covid">
+
+<h4>The first case(s)</h4>
+On February 27th, 2020 (week 9), the first case of COVID-19 was confirmed in the Netherlands.
+Before this occurrence (when everything was still normal) from week 4 in 2020, the streams of the top songs decreased. When the first COVID-19 cases, admissions and deaths were confirmed, the number continued to decline. Until the cases started to increase more rapidly. What caused this increase?
+
+<h4>Togetherness and solidariy during lockdown</h4>
+As the situation became more severe, with record COVID-related hospital admissions in week 13, the [Dutch government implemented the first lockdown: the 'intelligent' lockdown](https://en.wikipedia.org/wiki/COVID-19_pandemic_in_the_Netherlands){target="_blank"} (first dotted line). This led to relative high public solidarity towards those affected by the virus, especially essential workers en the elderly. This may explain the sudden spike of streams. The Top 1 rose from 1,598,458 to a (2020) record 3,482,822 streams within two weeks, with the song 17 Miljoen Mensen - Live @538 in Ahoy by Davina Michelle topping the charts for five consecutive weeks. 17 Miljoen Mensen (17 Million people) [was dedicated to the people affected by the virus](https://www.ad.nl/show/davina-michelle-en-snelle-brengen-17-miljoen-mensen-uit~a9bdeb0e){target="_blank"}. So this spike is most likely related to the virus and its effects. Although during the 2nd and 3rd lockdown show an increase in streams as well, the measures may not be the cause, as it is in line with the annual trend.
+  
+  </div>
+  
+  <div class="tab-pane fade" id="outliers">
+
+<h4>Trends</h4>
+Dutch Spotify users in general are fairly consistent, when it comes to streaming popular songs. Just looking at 2019, 2020 (and the first 7 few weeks of 2021), you can find a reoccurring pattern.Streams **increase during the first weeks followed by a sharp decline**. During summertime, streams **remain relatively stable**. And Streams **decrease before the holiday season, with a short spike on Christmas.** Showing therefore a 'procyclical' behavior, simply meaning that popular songs on average are correlated to a general trend (term repurposed from Economics).
+
+<h4>Outliers</h4>
+Not all Spotify users/songs follow the same trend. In some cases the status quo is defied a large margin. A couple of cases will be introduced that will be further analyzed.
+
+<h5>Eurovision Song Contest</h5>
+The most streamed song before the pandemic (also within the corpus) is *'Arcade'* by Duncan Laurence, with 5,473,513 streams in week 21, 2019. This is due to the song [winning the 2019 Eurovision Song Contest for the Netherlands](https://eurovision.tv/story/duncan-laurence-the-netherlands-wins-2019-eurovision-song-contest){target="_blank"}.
+
+<h5>Corona</h5>
+As mentioned earlier, the track *'17 Miljoen Mensen'* is also an outlier, but related to the pandemic. Another track that might be related is *'All I Want for Christmas Is You'* by Mariah Carey. As it was quite strange celebrating Christmas during a pandemic, people were streaming Christmas songs more and earlier in 2020 than in 2019.
+
+  </div>
+  
+  <div class="tab-pane fade" id="conclusion">
+
+So, in general the **popular songs in the Netherlands follow a periodic/cyclical trend.**
+
+The **outliers** are caused by a large **societal impact**, as explained by the togetherness during the first wave of the pandemic, the Netherlands winning Eurovision and people listening to Christmas songs more and earlier.
+
+At the same time, Dutch people 'recover' fairly quickly to the regular level. Second and third wave of COVID-19 and the related measures imposed by the Dutch government did not see similar impact as the first. Rather these followed similar pattern as in 2019.
+
+***
+
+<object data="https://open.spotify.com/embed/playlist/5JTGCV2ipF8P0ryLQ6r9jF" width="280" height="80">
+    <embed src="https://open.spotify.com/embed/playlist/5JTGCV2ipF8P0ryLQ6r9jF" width="280" height="80"></embed>
+    Error: Embedded data could not be displayed.
+</object>
+
+  </div>
+</div>
+
+
+<!-- Frame 3 -->
+
+### 3. A trip down memory lane:<br>**What were people in the Netherlands listening to before the pandemic?**<br><br>*Note: tentative*
 
 ```{r, echo = FALSE}
 # all2019f = list()
@@ -1115,137 +1027,10 @@ bscols(ggplotly(p1),
 
 A full analysis of the period before the pandemic (2019) will follow when the relevant plots are completed.
 
-<!-- Frame 3 -->
-
-### 3. **Covid-19 & Music trends**: Music trends show periodical listening pattern
-
-```{r, echo = FALSE}
-
-comb_data.long <- melt(comb_data, id.vars = c("week", "year...13", "week_year", "max_streams", "min_streams", "mean_streams", "top_track"), measure.vars = c("deceased", "hospital_admission"))
-
-coeff <- 1000
-
-
-p <- ggplot(comb_data.long, aes(x = week_year, label = max_streams, label2 = min_streams, label3 = top_track)) +
-  geom_line(aes(x = factor(week_year), y = max_streams/coeff, group = 1, color = "Streams Top 1 track"),
-            alpha = 0.7, size = 1) +
-  geom_point(aes(y = max_streams/coeff, color = "Streams Top 1 track" ), group = 1, alpha = 1, size = 1) +
-  geom_line(aes(x = factor(week_year), y = mean_streams/coeff, group = 2, color = "Average Streams of Top 50"),
-            alpha = 0.7, size = 1) +
-  geom_point(aes(y = mean_streams/coeff, color = "Average Streams of Top 50"), group = 2, alpha = 1, size = 1) +
-  geom_bar(aes(y = value, fill = variable), stat = "identity") +
-  
-  geom_vline(xintercept = 64, linetype="dotted", size = 0.5, alpha = 0.5) +
-    annotate("text", label = "<b>1st lockdown</b>\n'Intelligent'\nLockdown", x = 63, y = 4000, size = 3) +
-
-  geom_vline(xintercept = 94, linetype="dotted", size = 0.5, alpha = 0.5) +
-    annotate("text", label = "<b>2nd lockdown</b>\nPartial\nLockdown", x = 92, y = 4000, size = 3) +
-
-  geom_vline(xintercept = 103, linetype="dotted", size = 0.5, alpha = 0.5) +
-    annotate("text", label = "<b>3rd lockdown</b>\nHard\nLockdown", x = 101, y = 4000, size = 3) +
-
-  geom_vline(xintercept = 107, linetype="dotted", size = 0.5, alpha = 0.5) +
-    annotate("text", label = "Curfew", x = 105, y = 4000, size = 3) +
-
-  scale_color_manual(name = "Variables", values = c("Streams Top 1 track" = "#33618d",
-                                                    "Average Streams of Top 50" = "#440d57")) +
-  
-  scale_x_discrete(label=function(x){
-    return(str_replace(x,"_20","\n'"))
-    }) +
-  
-  scale_y_continuous(
-    
-    name = "Number of Hospitalized and Deceased\nNumber of Streams: Average & Top 1 Track (*1,000)",
-    
-    # Add a second axis and specify its features
-    #sec.axis = sec_axis(trans = ~ . * coeff, name="Number of Streams of Top 1 track")
-    expand = expansion(mult = c(0, 0))
-  )+
-  
-   # scale_color_viridis_d(
-   #  begin = 0,
-   #  end = 0.3,
-   #  option = "B",
-   #  alpha = 0.75,
-   #  guide = NULL,
-   #  direction = 1
-   #  ) +
-  
-  scale_fill_viridis_d(
-    begin = 0.7,
-    end = 0.9,
-    option = "D",
-    alpha = 0.75,
-    guide = NULL,
-    direction = -1,
-    name = "Variables",
-    labels = c("Deceased", "Hospital admissions")
-    ) +
-  
-  theme_light() +
-  labs(
-    x = "Week, Year",
-    title = "Spotify and Covid trends",
-    subtitle = "Trends from 2019 to 2021"
-  ) +
-
-  theme(axis.title.y = element_text(size=13),
-        axis.title.y.right = element_text(size=13),
-        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
-        )
-
-
-l1 <- list(
-  source=base64enc::dataURI(file = "icons/House-lockdown (1).png"),
-  x = 62.5, y = 1, sizex = 3, sizey = 0.05,
-  xref = "x", yref = "paper",
-  xanchor = "left", yanchor = "bottom"
-  )
-l2 <- list(
-  source=base64enc::dataURI(file = "icons/House-lockdown (1).png"),
-  x = 92.5, y = 1, sizex = 3, sizey = 0.05,
-  xref = "x", yref = "paper",
-  xanchor = "left", yanchor = "bottom"
-  )
-l3 <- list(
-  source=base64enc::dataURI(file = "icons/House-lockdown (1).png"),
-  x = 101.5, y = 1, sizex = 3, sizey = 0.05,
-  xref = "x", yref = "paper",
-  xanchor = "left", yanchor = "bottom"
-  )
-l3cf <- list(
-  source=base64enc::dataURI(file = "icons/Time (1).png"),
-  x = 105.5, y = 1, sizex = 3, sizey = 0.05,
-  xref = "x", yref = "paper",
-  xanchor = "left", yanchor = "bottom"
-  )
-
-ggplotly(p, dynamicTicks = TRUE) %>%
-  add_lines() %>%
-  rangeslider(start = str_replace("45_2019","_20","\n'"), end = str_replace("6_2021","_20","\n'")) %>%
-  layout(images = list(l1,l2,l3,l3cf))
-
-
-```
-
-
-***
-
-#### The first case(s)
-On February 27th, 2020 (week 9), the first case of COVID-19 had been confirmed in the Netherlands.
-Before this occurrence, when everything was normal, the number of streams of the top songs decreased until the end of the holiday season. Probably due people coming together to enjoy (the holiday) music, movies or other activities together, instead of individually. In the first few weeks of 2021 the number of streams started rising again.  
-
-From week 5 the number of top streams started to decline. And even When the first cases, the first admissions into the hospitals, and first deaths were reported the number continued to decline.
-
-#### Togetherness and solidariy during lockdown
-As the situation became more severe, with record COVID-related hostpital admissions in week 13, the [Dutch government implemented the first lockdown: the 'intelligent' lockdown](https://en.wikipedia.org/wiki/COVID-19_pandemic_in_the_Netherlands){target="_blank"} (first dotted line). This led to relative high public solidarity towards those affected by the virus, especially essential workers. This may explain the sudden spike of both Top 1 and average streams. The Top 1 rose from 1,598,458 to a record 3,482,822 streams within two weeks, with the song 17 Miljoen Mensen - Live @538 in Ahoy by Davina Michelle topping the charts for five consecutive weeks. 17 Miljoen Mensen (17 Million people) [was dedicated to the people affected by the virus](https://www.ad.nl/show/davina-michelle-en-snelle-brengen-17-miljoen-mensen-uit~a9bdeb0e){target="_blank"}. So this spike is most likely related to the virus and its effects.
-
-
 
 <!-- Frame 4 -->
 
-### 4. Top streamed tracks: Consistent hits and one hit wonders. **Difficult to classify most popular song**<br>*Note: tentative* 
+### 4. Top streamed tracks: Consistent hits and one hit wonders. **Difficult to classify most popular song**<br>*Note: tentative*{data-commentary-width=500}  
 
 ```{r, echo = FALSE}
 require(flexdashboard)
@@ -1253,10 +1038,13 @@ require(shinydashboard)
 require(shiny)
 
 top_tot_streams <- distinct(
-  traxjoin %>% group_by(top_track) %>% 
+  # traxjoin %>%
+  comb_data_trax %>% 
+    group_by(top_track) %>% 
     summarize(tot_streams, 
               number_weeks_top1 = n,
-              avg_topstream_topweek = round((tot_streams/n), digits = 0)) %>% 
+              avg_topstream_topweek = round((tot_streams/n), digits = 0),
+              pandemic) %>% 
     arrange(desc(tot_streams))
   )
 
@@ -1300,7 +1088,7 @@ tabBox(width=NULL,
 
 ***
 
-In the corpus there are a total of 20 distinct tracks topping that charts in a span of 68 weeks. On average a Top 1 track remains for `r mean(top_tot_streams$number_weeks_top1)` weeks on the number 1 spot, while streamed `r round(mean(top_tot_streams$tot_streams))` times, and `r round(mean(top_tot_streams$avg_topstream_topweek))` times per week on the Top 1 spot.
+In the corpus there are a total of 35 distinct tracks topping that charts in a span of 68 weeks. On average a Top 1 track remains for `r mean(top_tot_streams$number_weeks_top1)` weeks on the number 1 spot, while streamed `r round(mean(top_tot_streams$tot_streams))` times, and `r round(mean(top_tot_streams$avg_topstream_topweek))` times per week on the Top 1 spot.
 
 ##### The most popular track
 This gives an interesting insight to the weekly most popular songs in this corpus. But which track is the most popular? Since the corpus is time constrained, solely considering the number of streams might not show the full picture. Therefore, three variables are considered:
@@ -1319,7 +1107,7 @@ There are limitations to this approach, only the number one spots are considere.
 
 <!-- Frame 5 -->
 
-### 5. 17 Miljoen Mensen vs. 15 Miljoen Mensen - The prominent cover song during the pandemic shows **little similarity with original** {data-commentary-width="50%"}
+### 5. 17 Miljoen Mensen vs. 15 Miljoen Mensen - The prominent cover song during the pandemic shows **little similarity with original**{data-commentary-width=500} 
 
 ```{r, include = FALSE}
 ## 17 Miljoen
@@ -1361,7 +1149,7 @@ miljoen_17c <- miljoen_17 %>%
     )
   ) +
   geom_tile() +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "17 Million (2020)") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", subtitle = "17 Miljoen Mensen (2020)") +
   theme_minimal() +
   scale_fill_viridis_c()
 
@@ -1377,7 +1165,7 @@ miljoen_15c <- miljoen_15 %>%
     )
   ) +
   geom_tile() +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "15 Million (1996)") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", subtitle = "15 Miljoen Mensen (1996)") +
   theme_minimal() +
   scale_fill_viridis_c()
 
@@ -1416,19 +1204,47 @@ grid.arrange(miljoen_p, # First row with one plot spanning over 2 columns
 
 ***
 
-The track "17 Miljoen Mensen" (2020) is a cover of "15 Miljoen Mensen" (1996), which was released 24 years earlier! An analysis of the chromafeatures of the two tracks made in order to find similarities between them. Instantly noticed differences are 17 Miljoen mensen's title adjustment for the population increase of 2 million people, and its shortness with a duration of just 1 minute and 47 seconds.
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link active" data-toggle="tab" href="#chroma">Chroma</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#saf">Audio Features</a>
+  </li>
+</ul>
 
-The first plot shows the Dynamic Time Warping of the two tracks, using Euclidean norm and angular distance. A diagonal pattern would denote similarity between the two tracks. This is not observed, which implies significant differences. For instance, the table below shows that pitch classes differ. According to the Spotify API, "17 Miljoen Mensen" is in the key of G major, wheras "15 Miljoen Mensen" is in the key of C major. This is not explicitly shown, but they are represented in their respective chromagrams.
 
-The tracks do share a   In addition the 'sound and feel' of the tracks differ: 15 miljoen mensen has a higher danceability, energy, and loudness, whereas "17 miljoen mensen" has a much higher acousticness and liveness (due to the recording being a live performance). A remarkable commonality probably explains the differences: Both tracks were unintended single releases, ["15 miljoen mensen" was initially written for a commercial, and "17 Miljoen mensen" as a tribute for a (due to COVID-19) canceled music concert](https://nl.wikipedia.org/wiki/15_miljoen_mensen){target="_blank"}. The different motivations behind the tracks reflects the different 'sound and feel' as shown by Spotify API.
+<div id="myTabContent" class="tab-content">
+  <div class="tab-pane fade active in" id="chroma">
+
+<h4>DTW and Chromagrams</h4>
+The track "17 Miljoen Mensen" (2020) is a cover of "15 Miljoen Mensen" (1996). An analysis of the chromafeatures of the two tracks aims find similarities between them. Instantly noticed differences are 17 Miljoen mensen's title adjustment for the population increase of 2 million people, and its shortness with a duration of just 1 minute and 47 seconds. But what are other differences or similarities?
+
+The first plot shows the **Dynamic Time Warping** plot of the two tracks, using Euclidean norm and angular distance. A diagonal pattern would denote similarity between the two tracks. This is not observed, which implies **significant differences between the two tracks**. This is supported as the the table shows that the **pitch classes differ**. According to the Spotify API, **"17 Miljoen Mensen" is in the key of G major**, wheras **"15 Miljoen Mensen" is in the key of C major**. This is not explicitly shown, but they are represented in their respective chromagrams.
+
+In addition, the 'sound and feel' of the tracks differ: 15 miljoen mensen has a higher danceability, energy, and loudness, whereas "17 miljoen mensen" has a much higher acousticness and liveness (due to the recording being a live performance).
+
+A remarkable commonality probably explains the differences: Both tracks were unintended single releases, ["15 miljoen mensen" was initially written for a commercial, and "17 Miljoen mensen" as a tribute for a (due to COVID-19) canceled music concert](https://nl.wikipedia.org/wiki/15_miljoen_mensen){target="_blank"}. The different motivations behind the tracks reflects the different 'sound and feel' as shown by Spotify API.
+
+For a commercial you would want a more catchy/upbeat track, contrary to a song related to a disaster or crisis. This explains the difference in **loundness**, **"15 Miljoen Mensen" has a loudness of -10.041dB**, wheras **"15 Miljoen Mensen" has a loudness of -7.063dB**.
+  
+  </div>
+  
+  <div class="tab-pane fade" id="saf">
+
+<h4>Spotify Features Table</h4>
 
 `r knitr::kable(miljoen_f)`
+
+  </div>
+</div>
+
 
 ***
 
 ```{=html}
-<object data="https://open.spotify.com/embed/playlist/3wraxQVN9Z6PmTk7wEA6wR" width="280" height="140">
-    <embed src="https://open.spotify.com/embed/playlist/3wraxQVN9Z6PmTk7wEA6wR" width="280" height="140"></embed>
+<object data="https://open.spotify.com/embed/playlist/3wraxQVN9Z6PmTk7wEA6wR" width="280" height="80">
+    <embed src="https://open.spotify.com/embed/playlist/3wraxQVN9Z6PmTk7wEA6wR" width="280" height="80"></embed>
     Error: Embedded data could not be displayed.
 </object>
 ```
@@ -1445,25 +1261,27 @@ The tracks do share a   In addition the 'sound and feel' of the tracks differ: 1
 # ggplotly(p + geom_point())
 
 z <- comb_data %>%
-  filter(year...26 %in% c(2019, 2020)) %>%
+  filter(year...27 %in% c(2019, 2020)) %>%
+  # filter(year %in% c(2019, 2020)) %>%  
   filter(week %in% c(45:53))
 
 z_a <- z %>% 
-  filter(year...26 == 2020) %>%
+  filter(year...27 == 2020) %>%
   filter(week %in% c(50:53))
 
 ann_1 <- data.frame(mean_valence = 0.6,mean_energy = 0.5868,
-                       year...26 = factor(2020,levels = c(2019,2020)),
+                       year...27 = factor(2020,levels = c(2019,2020)),
                        top_track = "all i want")
 ann_2 <- data.frame(mean_valence = 0.6,mean_energy = 0.5868,
-                       year...26 = factor(2019,levels = c(2019,2020)),
+                       year...27 = factor(2019,levels = c(2019,2020)),
                        top_track = "all i want")
 
 #p <- ggplot(z, aes(mean_valence, mean_energy, color = mean_tempo, label = week_year, label2 = top_track)) +
 p <- ggplot(z, aes(mean_valence, mean_energy, label = top_track)) +
   geom_point(aes(size = mean_dance, color = mean_tempo)) +
   geom_text(aes(label = week), vjust = 0, nudge_y = 0.003, nudge_x = 0.003) +
-  facet_grid(. ~ year...26)+
+  facet_grid(. ~ year...27)+
+  # facet_grid(. ~ year)+
   scale_colour_viridis_c(
     option = "D",
     alpha = 0.75,
@@ -1489,17 +1307,17 @@ ggplotly(p1)
 
 ***
 
-Christmas songs started to dominate the charts in 2020 from around week 49 until week 53, whereas in 2019 Christmas this phenomenon occurred later. In 2020 it is noticeable that the bottom right corner contain tracks with relatively high BPM, high valence, low energy and low danceability.Duruing these weeks Christmas tracks dominated the charts. In 2019 this phenomenon is very noticeable in week 52, but shows that Christmas slowly started in week 50. Also in 2020, the charts remained similar during the holiday period from week 50 to 53, whereas in 2019 week 52 saw a spike of the Christmas related audio features. This pattern implies more Christmas tracks entered the Top 50.
+**Christmas songs started to dominate the charts in 2020 from around week 49 until week 53**, whereas **in 2019 Christmas this phenomenon occurred a bit later**. In 2020 it is noticeable that the bottom right corner contain tracks with *relatively* high BPM, high valence, lower energy and lower danceability.During these weeks Christmas tracks dominated the charts. **In 2019 this phenomenon is very noticeable in week 52**, but shows that Christmas slowly started in week 50. Also in 2020, the charts remained similar during the holiday period from week 50 to 53, whereas in 2019 week 52 saw a spike of the Christmas related audio features. This pattern implies more Christmas tracks entered the Top 50.
 
 Interestingly, Mariah Carey's 'All I Want for Christmas' topped the charts for four consecutive weeks in 2020, as opposed to 1 week in 2019.
 
-A Possible explanation is that due to the imposed lockdown and other restrictions, people may have felt a need or desire for the "Christmas Spirit" or "Christmas Vibes" a week earlier than in 2019.
+A Possible explanation is that due to the imposed lockdown and other restrictions, people may have felt a need or desire for the "Christmas Spirit/Vibes" a week earlier than in 2019.
 
 Another interesting discovery is that similar to 2019, the top streams in 2020 decreased in similar fashion. A possible explanation is that people disregarded the lockdown regulations and spent the holiday season with friends and/or family or were preoccupied with other activities to keep in touch with them.
 
 <!-- Frame 7 -->
 
-### 7. Self-Similarity Matrix: "Dance Monkey" **Shows repeating pattern and noticeably distinct Millennial Whoop**
+### 7. Self-Similarity Matrix: "Dance Monkey" **Shows repeating pattern and noticeably distinct Millennial Whoop** {data-commentary-width=500} 
 ```{r, include = FALSE}
 dancemonkey <-
   get_tidy_audio_analysis("1rgnBhdG2JDFTbYkYRZAku") %>% # Change URI.
@@ -1609,10 +1427,10 @@ ssm_t <- dancemonkey %>%
 The first cepstrogram plot shows the magnitude of each timbre feature per segment of the track. The feature c01 is loudness, c02 is low frequency, c03 is mid frequencies. c04 and up are not defined as straight forward, but they may be implied by keeping track of changes within a track during specific segments. The cepstrogram shows that "Dance Monkey’s timbre features are relatively more defined by c01 to c05.
 
 - **c01 Loudness:** The segments reflect the loudness of the track, this is especially noted during the final chorus.
-- **c02* Darkness:** The segments faintly show a higher magnitude when the bass drum hits. But its omission is noted much clearly during the breakdown starting at 150 seconds.
-- **c03* Mid frequency:** It's shown at about 50 seconds and 165 seconds when higher notes are less and more distinct respectively.
-- **c04* Attack:** This is very prevalent during the intro (vocal stretch fade-in sfx).
-- **c05* [Unknown]:** It has the highest magnitude at around 150 seconds, noticeable is the loudness of the "[Millenial Whoop](https://en.wikipedia.org/wiki/Millennial_whoop){target="_blank"}".
+- **c02 Darkness:** The segments faintly show a higher magnitude when the bass drum hits. But its omission is noted much clearly during the breakdown starting at 150 seconds.
+- **c03 Mid frequency:** It's shown at about 50 seconds and 165 seconds when higher notes are less and more distinct respectively.
+- **c04 Attack:** This is very prevalent during the intro (vocal stretch fade-in sfx).
+- **c05 [Unknown]:** It has the highest magnitude at around 150 seconds, noticeable is the loudness of the "[Millenial Whoop](https://en.wikipedia.org/wiki/Millennial_whoop){target="_blank"}".
 
 ##### Self Similarity
 The second and third plots are Self Similarity Matrices (SSM); The first being pitch, and the second timbre. These plots show the structure of a track by denoting patterns of similarities that reoccur. Diagonal lines and a checkerboard pattern show similarity and repetition.
@@ -1624,8 +1442,8 @@ The pitch SSM is plotted using Euclidean norm, cosine distance and summarized by
 ***
 
 ```{=html}
-<object data="https://open.spotify.com/embed/track/1rgnBhdG2JDFTbYkYRZAku" width="280" height="140">
-    <embed src="https://open.spotify.com/embed/track/1rgnBhdG2JDFTbYkYRZAku" width="280" height="140"></embed>
+<object data="https://open.spotify.com/embed/track/1rgnBhdG2JDFTbYkYRZAku" width="280" height="80">
+    <embed src="https://open.spotify.com/embed/track/1rgnBhdG2JDFTbYkYRZAku" width="280" height="80"></embed>
     Error: Embedded data could not be displayed.
 </object>
 ```
@@ -1715,8 +1533,8 @@ G - A - B♭ - C - D - E♭ - F
 ***
 
 ```{=html}
-<object data="https://open.spotify.com/embed/track/3tjFYV6RSFtuktYl3ZtYcq" width="280" height="140">
-    <embed src="https://open.spotify.com/embed/track/3tjFYV6RSFtuktYl3ZtYcq" width="280" height="140"></embed>
+<object data="https://open.spotify.com/embed/track/3tjFYV6RSFtuktYl3ZtYcq" width="280" height="80">
+    <embed src="https://open.spotify.com/embed/track/3tjFYV6RSFtuktYl3ZtYcq" width="280" height="80"></embed>
     Error: Embedded data could not be displayed.
 </object>
 ```
@@ -1730,7 +1548,7 @@ G - A - B♭ - C - D - E♭ - F
 
 ```{r, echo = FALSE}
 pc <- corpus_df %>%
-  group_by(year...32) %>%
+  group_by(year) %>%
   summarize(key, mode = recode_factor(mode,
                               `0` = as.character("Minor"),
                               `1` = as.character("Major"))) %>%
@@ -1762,7 +1580,7 @@ pc <- corpus_df %>%
     #                           `11` = "B")) %>%
 p9_1 <- pc %>%  
 ggplot(aes(x = key_key, fill = as.factor(mode))) +
-  facet_wrap(~ year...32) +
+  facet_wrap(~ year) +
   scale_fill_viridis_d(
     alpha = 0.7,
     begin = 0.6,
@@ -1780,7 +1598,7 @@ ggplot(aes(x = key_key, fill = as.factor(mode))) +
 
 p9_2 <- pc %>%  
 ggplot(aes(x = key_key, fill = as.factor(mode))) +
-  facet_wrap(~ year...32) +
+  facet_wrap(~ year) +
   scale_fill_viridis_d(
     alpha = 0.7,
     begin = 0.6,
@@ -1832,13 +1650,13 @@ Note that 2021 only contains the first 7 weeks, whereas 2019 and 2020 contain 52
 
 ```{r, echo = FALSE}
 pc <- corpus_df %>%
-  group_by(year...32) %>%
+  group_by(year) %>%
   summarize(tempo, mode = recode_factor(mode,
                               `0` = as.character("Minor"),
                               `1` = as.character("Major")))
 p10_1 <- pc %>%  
 #ggplot(aes(x = key_key, fill = as.factor(mode))) +
-ggplot(aes(x = tempo, fill = year...32)) +
+ggplot(aes(x = tempo, fill = year)) +
   #facet_wrap(~ year...31) +
   scale_fill_viridis_d(
     alpha = 0.7,
@@ -1943,112 +1761,6 @@ function hideNonVisibleDivs() {
 }
 ```
 
-```{css, echo = FALSE}
-.btn1 {
-  border: none;
-  background-color: rgba(29, 185, 84, 0.8);
-  padding: 14px 26px;
-  font-size: 16px;
-  cursor: pointer;
-  display: inline-block;
-  color: white;
-  transition: 0.3s;
-}
-
-.btn1:hover {
-  # background-color: rgba(29, 185, 84, 0.8);
-  background-color: rgba(47, 71, 79, 0.7);
-  color: white;
-}
-
-.b2019 {
-  color: rgba(44, 62, 80, 1);
-  background-color: #c0c1d7;
-}
-
-.b2020 {
-  color: rgba(44, 62, 80, 1);
-  background-color: #b4ded8;
-}
-
-.b2021 {
-  color: rgba(44, 62, 80, 1);
-  background-color: #e8f4b7;
-}
-
-#id2019 {
-  display: none;
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(192, 193, 215, 0.8) !important;
-  background-image: url('icons/musical-note(B).png');
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-#id2020 {
-  display: none;
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(180, 222, 216, 0.8) !important;
-  background-image: url('icons/musical-note(B).png');
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-#id2021 {
-  display: none;
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(232, 244, 183, 0.8) !important;
-  background-image: url('icons/musical-note(B).png');
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-#box hover
-
-#id2019:hover {
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(192, 193, 215, 1)!important;
-  background-image: url('icons/musical-note(W).png') !important;
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-#id2020:hover {
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(180, 222, 216, 1) !important;
-  background-image: url('icons/musical-note(W).png');
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-#id2021:hover {
-  transition: 0.3s;
-  #background-color: rgba(191, 191, 191, 0.7);
-  background-color: rgba(232, 244, 183, 1) !important;
-  background-image: url('icons/musical-note(W).png');
-  background-repeat: no-repeat;
-  background-size: 35%;
-  background-position: 100% 70%;
-  background-blend-mode: soft-light;
-}
-
-```
-
 ```{=html}
 <div class="storyboard-nav">
   <div class="sbframelist" style="overflow: hidden;width: 100%;">
@@ -2115,13 +1827,6 @@ slickR(plist, height = "80", width = "80%") + settings
 
 ```
 
-```{css}
-.chart-stage .html-widget-static-bound {
-    width: 95% !important;
-    height: 100% !important;
-}
-```
-
 ***
 
 Another popular track in the corpus is "Tigers" by Bilal Wahib. Tempograms are plotted in order to show the estimated BPM of the track along its duration.
@@ -2137,8 +1842,283 @@ At the 75 second mark, there is a slight drop and increase in tempo. From this p
 ***
 
 ```{=html}
-<object data="https://open.spotify.com/embed/track/7jnaow1bGpKO2VkgtYE8Vv" width="280" height="140">
-    <embed src="https://open.spotify.com/embed/track/7jnaow1bGpKO2VkgtYE8Vv" width="280" height="140"></embed>
+<object data="https://open.spotify.com/embed/track/7jnaow1bGpKO2VkgtYE8Vv" width="280" height="80">
+    <embed src="https://open.spotify.com/embed/track/7jnaow1bGpKO2VkgtYE8Vv" width="280" height="80"></embed>
     Error: Embedded data could not be displayed.
 </object>
 ```
+<!-- Frame 12 -->
+
+### 12 X
+
+```{r, include = FALSE, cache = TRUE}
+corpus_cf <- corpus_df %>%
+    add_audio_analysis()
+```
+
+```{r, include = FALSE, cache = TRUE}
+corpus_features <-
+    # #corpus_top10 %>%  # For your portfolio, change this to the name of your corpus.
+    # corpus_df %>%  # For your portfolio, change this to the name of your corpus.
+    # add_audio_analysis() %>%
+    corpus_cf %>%
+    mutate(
+        pandemic = factor(pandemic),
+        segments = map2(segments, key, compmus_c_transpose),
+        pitches =
+            map(
+                segments,
+                compmus_summarise, pitches,
+                method = "mean", norm = "manhattan"
+            ),
+        timbre =
+            map(
+                segments,
+                compmus_summarise, timbre,
+                method = "mean",
+            )
+    ) %>%
+    mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
+    mutate_at(vars(pitches, timbre), map, bind_rows) %>%
+    unnest(cols = c(pitches, timbre))
+```
+
+```{r, include = FALSE, cache = TRUE}
+corpus_recipe <-
+  recipe(
+    pandemic ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo +
+      duration_minute +
+      Streams +
+      C + `C#|Db` + D + `D#|Eb` +
+      E + `F` + `F#|Gb` + G +
+      `G#|Ab` + A + `A#|Bb` + B +
+      c01 + c02 + c03 + c04 + c05 + c06 +
+      c07 + c08 + c09 + c10 + c11 + c12,
+    data = corpus_features,          # Use the same name as the previous block.
+  ) %>%
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors())      # Converts to z-scores.
+  # step_range(all_predictors())    # Sets range to [0, 1].
+```
+
+```{r, include=FALSE, cache = TRUE}
+corpus_cv <- corpus_features %>% vfold_cv(10)
+
+knn_model <-
+  nearest_neighbor(neighbors = 1) %>%
+  set_mode("classification") %>% 
+  set_engine("kknn")
+corpus_knn <- 
+  workflow() %>% 
+  add_recipe(corpus_recipe) %>% 
+  add_model(knn_model) %>% 
+  fit_resamples(
+    corpus_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
+``` 
+
+```{r, include=FALSE, cache = TRUE}
+tree_model <-
+  decision_tree() %>%
+  set_mode("classification") %>% 
+  set_engine("C5.0")
+corpus_tree <- 
+  workflow() %>% 
+  add_recipe(corpus_recipe) %>% 
+  add_model(tree_model) %>% 
+  fit_resamples(
+    corpus_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
+``` 
+
+```{r, echo= FALSE}
+#corpus_knn %>% get_conf_mat()
+corpus_knn %>% get_conf_mat() %>% autoplot(type = "mosaic")
+#corpus_knn %>% get_conf_mat() %>% autoplot(type = "heatmap")
+# corpus_tree %>% get_pr()
+```
+
+***
+
+The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "eras" (e.g. 70's, 80'and 90's) would render better results.
+
+<!-- `r table(corpus_tree %>% get_pr())` -->
+
+<!-- `r table(corpus_knn %>% get_pr())` -->
+
+<!-- Frame 13 -->
+
+### 12 X
+
+```{r, include = FALSE, cache = TRUE}
+forest_model <-
+  rand_forest() %>%
+  set_mode("classification") %>% 
+  set_engine("ranger", importance = "impurity")
+corpus_forest <- 
+  workflow() %>% 
+  add_recipe(corpus_recipe) %>% 
+  add_model(forest_model) %>% 
+  fit_resamples(
+    corpus_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
+```
+
+```{r, echo=FALSE}
+workflow() %>% 
+  add_recipe(corpus_recipe) %>% 
+  add_model(forest_model) %>% 
+  fit(corpus_features) %>% 
+  pluck("fit", "fit", "fit") %>%
+  ranger::importance() %>% 
+  enframe() %>% 
+  mutate(name = fct_reorder(name, value)) %>% 
+  ggplot(aes(name, value)) + 
+  geom_col() + 
+  coord_flip() +
+  theme_minimal() +
+  labs(x = NULL, y = "Importance")
+```
+
+```{r, include=FALSE, cache = TRUE}
+# corpus_features %>%
+#   ggplot(aes(x = c01, y = c07, colour = year_f, size = tempo)) +
+#   geom_point(alpha = 0.8) +
+#   scale_color_viridis_d() +
+#   labs(
+#     x = "Timbre Component 1",
+#     y = "Timbre Component 7",
+#     size = "Tempo",
+#     colour = "Year"
+#   )
+``` 
+
+
+```{r, include=FALSE}
+# corpus_juice <-
+#   recipe(
+#     `Track Name` ~
+#       danceability +
+#       energy +
+#       loudness +
+#       speechiness +
+#       acousticness +
+#       instrumentalness +
+#       liveness +
+#       valence +
+#       tempo +
+#       duration_minute, # +
+#       # C + `C#|Db` + D + `D#|Eb` +
+#       # E + `F` + `F#|Gb` + G +
+#       # `G#|Ab` + A + `A#|Bb` + B +
+#       # c01 + c02 + c03 + c04 + c05 + c06 +
+#       # c07 + c08 + c09 + c10 + c11 + c12,
+#     data = corpus_top10
+#   ) %>%
+#   step_center(all_predictors()) %>%
+#   step_scale(all_predictors()) %>% 
+#   # step_range(all_predictors()) %>% 
+#   prep(corpus_top10 %>% mutate(track.name = str_trunc(`Track Name`, 20))) %>%
+#   juice() %>%
+#   column_to_rownames("Track Name")
+# 
+# corpus_dist <- dist(corpus_juice, method = "euclidean")
+# 
+# corpus_dist %>% 
+#   hclust(method = "single") %>% # Try single, average, and complete.
+#   dendro_data() %>%
+#   ggdendrogram()
+```
+
+***
+
+The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "era's" (e.g. 70's, 80'and 90's) would render better results.
+
+<!-- Frame 14 -->
+
+### 12 X
+
+```{r, include = FALSE, cache = TRUE}
+# workflow() %>% 
+#   add_recipe(corpus_recipe) %>% 
+#   add_model(forest_model) %>% 
+#   fit(corpus_features) %>% 
+#   pluck("fit", "fit", "fit") %>%
+#   ranger::importance() %>% 
+#   enframe() %>% 
+#   mutate(name = fct_reorder(name, value)) %>% 
+#   ggplot(aes(name, value)) + 
+#   geom_col() + 
+#   coord_flip() +
+#   theme_minimal() +
+#   labs(x = NULL, y = "Importance")
+```
+
+```{r, echo=FALSE}
+corpus_features %>%
+  ggplot(aes(x = c01, y = c07, colour = year_f, size = tempo)) +
+  geom_point(alpha = 0.8) +
+  scale_color_viridis_d() +
+  labs(
+    x = "Timbre Component 1",
+    y = "Timbre Component 7",
+    size = "Tempo",
+    colour = "Year"
+  )
+``` 
+
+
+```{r, include=FALSE}
+# corpus_juice <-
+#   recipe(
+#     `Track Name` ~
+#       danceability +
+#       energy +
+#       loudness +
+#       speechiness +
+#       acousticness +
+#       instrumentalness +
+#       liveness +
+#       valence +
+#       tempo +
+#       duration_minute, # +
+#       # C + `C#|Db` + D + `D#|Eb` +
+#       # E + `F` + `F#|Gb` + G +
+#       # `G#|Ab` + A + `A#|Bb` + B +
+#       # c01 + c02 + c03 + c04 + c05 + c06 +
+#       # c07 + c08 + c09 + c10 + c11 + c12,
+#     data = corpus_top10
+#   ) %>%
+#   step_center(all_predictors()) %>%
+#   step_scale(all_predictors()) %>% 
+#   # step_range(all_predictors()) %>% 
+#   prep(corpus_top10 %>% mutate(track.name = str_trunc(`Track Name`, 20))) %>%
+#   juice() %>%
+#   column_to_rownames("Track Name")
+# 
+# corpus_dist <- dist(corpus_juice, method = "euclidean")
+# 
+# corpus_dist %>% 
+#   hclust(method = "single") %>% # Try single, average, and complete.
+#   dendro_data() %>%
+#   ggdendrogram()
+```
+***
+
+The corpus has a large variety and average similarity of a Audio features, and is solely based on popular tracks. This combined with the timeframe of roughly one year, predicting whether a track belongs before or during the pandemic is quite unfeasible. The music between 2019 and 2021 is too similar to distinguish a pattern of tracks topping the chart in the two time periods. Comparing different musical "era's" (e.g. 70's, 80'and 90's) would render better results.
+
+### Conclusion
+
+Conclusion
