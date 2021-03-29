@@ -1106,7 +1106,7 @@ In the weekly plots it is observed that the average valence is much higher durin
 
 <!-- Frame 4 -->
 
-### 4. Top streamed tracks: Consistent hits and one hit wonders. **Difficult to classify most popular song**<br>*Note: tentative*{data-commentary-width=500}  
+### 4. Top streamed tracks: Consistent hits and one hit wonders. **Difficult to classify most popular song**{data-commentary-width=500}  
 
 ```{r, echo = FALSE}
 require(flexdashboard)
