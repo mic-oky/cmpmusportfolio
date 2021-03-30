@@ -1028,7 +1028,7 @@ sd_corpus <- SharedData$new(corpus_df)
 fls_1 <- filter_slider("ps", "Position", sd_corpus, "Position", step = 1)
 fls_2 <- filter_slider("streams", "Streams", sd_corpus, "Streams", step = 100000)
 flc_1 <- filter_checkbox(id = "pandemic", label = "Pandemic", sharedData = sd_corpus, group = ~pandemic, inline = TRUE)
-flc_2 <- filter_checkbox(id = "week", label = "week_n", sharedData = sd_corpus, group = ~week_n, inline = TRUE)
+flc_2 <- filter_checkbox(id = "week", label = "Week", sharedData = sd_corpus, group = ~week_n, inline = TRUE)
 
 p1 <- ggplot(sd_corpus, aes(x = valence, y = energy, colour = pandemic, label = `Track Name`, label2 = Artist)) +
   geom_point(aes(size = danceability), alpha = 0.3) +
@@ -1037,6 +1037,7 @@ p1 <- ggplot(sd_corpus, aes(x = valence, y = energy, colour = pandemic, label = 
     begin = 0.5,
     end = 0.9,
   ) +
+  labs(x = "Valence", y = "Energy", title = "Valence/Energy - Quadrants") +
   theme_light()
 
 p2 <- ggplot(sd_corpus, aes(x = week, colour = pandemic, label = year, group = 1)) +
@@ -1048,7 +1049,7 @@ p2 <- ggplot(sd_corpus, aes(x = week, colour = pandemic, label = year, group = 1
     begin = 0.5,
     end = 0.9,
   ) +
-  labs(x = "Week", y = "Average Valence") + theme_light()
+  labs(x = "Week", y = "Average Valence", title = "Valence over time") + theme_light()
 
 p3 <- ggplot(sd_corpus, aes(x = week, colour = pandemic, label = year, group = 1)) +
   geom_line(aes(y = mean_streams, group = 1, alpha = 0.1)) +
@@ -1059,15 +1060,76 @@ p3 <- ggplot(sd_corpus, aes(x = week, colour = pandemic, label = year, group = 1
     begin = 0.5,
     end = 0.9,
   ) +
-  labs(x = "Week", y = "Average Streams") + theme_light()
+  labs(x = "Week", y = "Average Streams", title = "Number of Streams over time") + theme_light()
 
+anno <- list(x = 0, y = 1, text = "Angry", xref = "x", yref = "y", showarrow = FALSE)
+anno2 <- list(x = 1, y = 1, text = "Happy", xref = "x", yref = "y", showarrow = FALSE)
+anno3 <- list(x = 1, y = 0, text = "Relaxed", xref = "x", yref = "y", showarrow = FALSE)
+anno4 <- list(x = 0, y = 0, text = "Sad", xref = "x", yref = "y", showarrow = FALSE)
 
-bscols(widths = c(6, 6),
-       ggplotly(p1),
+vline <- function(x = 0, color = "black") {
+  list(
+    type = "line", 
+    y0 = 0, 
+    y1 = 1, 
+    yref = "paper",
+    x0 = x, 
+    x1 = x, 
+    line = list(color = color)
+  )
+}
+
+hline <- function(y = 0, color = "back") {
+  list(
+    type = "line", 
+    x0 = 0, 
+    x1 = 1, 
+    xref = "paper",
+    y0 = y, 
+    y1 = y, 
+    line = list(color = color)
+  )
+}
+
+arrow_up <- list(
+  x = 0.5, y = 1,
+  xref = "x", yref = "y", axref = "x", ayref = "y",
+  text = "", showarrow = T,
+  ax = 0.5, ay = 0
+)
+arrow_down <- list(
+  x = 0.5, y = 0,
+  xref = "x", yref = "y", axref = "x", ayref = "y",
+  text = "", showarrow = T,
+  ax = 0.5, ay = 1
+)
+arrow_right <- list(
+  x = 1, y = 0.5,
+  xref = "x", yref = "y", axref = "x", ayref = "y",
+  text = "", showarrow = T,
+  ax = 0, ay = 0.5
+)
+arrow_left <- list(
+  x = 0, y = 0.5,
+  xref = "x", yref = "y", axref = "x", ayref = "y",
+  text = "", showarrow = T,
+  ax = 1, ay = 0.5
+)
+
+bscols(widths = c(6,6),
+       ggplotly(p1 + xlim(0,1) + ylim(0,1)) %>%
+         layout(annotations = (arrow_up)) %>%
+         layout(annotations = (arrow_down)) %>%
+         layout(annotations = (arrow_right)) %>%
+         layout(annotations = (arrow_left)) %>%
+         layout(annotations = (anno)) %>%
+         layout(annotations = (anno2)) %>%
+         layout(annotations = (anno3)) %>%
+         layout(annotations = (anno4)),
        list(
          ggplotly(p2),
-         ggplotly(p3)
-       ))
+         ggplotly(p3))
+       )
 
 ```
 
@@ -1098,7 +1160,7 @@ function hideShow2() {
 
 In this frame you make week-for-week comparisons for different variables based on the period before or during the pandemic. 
 
-The interesting variables to compare the different periods are *valence* and *energy* as these reflect the valance/arousal model that shows the emotions *Happy*, *Angry*, *Sad*, *Relaxed*. 
+The interesting variables to compare the different periods are *valence* and *energy* as these reflect the valance/arousal model that show *Happy*, *Angry*, *Sad*, *Relaxed* emotions. 
 
 The corpus is spread fairly evenly, and both before and during the pandemic most of the Top 50 tracks are in the *Happy* quadrant. This is not very surprising, as the Top 50 usually mostly consist of pop songs.
 
@@ -1115,9 +1177,11 @@ require(shiny)
 
 top_tot_streams <- distinct(
   # traxjoin %>%
-  comb_data_trax %>% 
+  comb_data_trax %>%
+    mutate(sd_tot_streams = (sqrt((tot_streams-mean(tot_streams))^2)/(nrow(comb_data_trax)-1))) %>%
     group_by(top_track) %>% 
-    summarize(tot_streams, 
+    summarize(tot_streams,
+              sd_tot_streams,
               number_weeks_top1 = n,
               avg_topstream_topweek = round((tot_streams/n), digits = 0),
               pandemic) %>% 
@@ -1128,15 +1192,18 @@ top_tot_streams_t <- top_tot_streams
 
 names(top_tot_streams_t)[1] <- "Track name - Artist"
 names(top_tot_streams_t)[2] <- "Total Streams"
-names(top_tot_streams_t)[3] <- "Number of weeks at Top 1"
-names(top_tot_streams_t)[4] <- "Average Streams per week on Top 1"
+names(top_tot_streams_t)[3] <- "Std Dev - Total Streams"
+names(top_tot_streams_t)[4] <- "Number of weeks at Top 1"
+names(top_tot_streams_t)[5] <- "Average Streams per week at Top 1"
+
+
 
 # top_table <- datatable(top_tot_streams_t)
 
 sd_top_tot <- SharedData$new(top_tot_streams_t)
 fls4_1 <- filter_slider("n_weeks", "Number of weeks at Top 1", sd_top_tot, "Number of weeks at Top 1", step = 1)
 fls4_2 <- filter_slider("tot_streams", "Total Streams", sd_top_tot, "Total Streams", step = 100000)
-fls4_3 <- filter_slider("avg_streams", "Average Streams per week on Top 1", sd_top_tot, "Average Streams per week on Top 1", step = 100000)
+fls4_3 <- filter_slider("avg_streams", "Average Streams per week at Top 1", sd_top_tot, "Average Streams per week at Top 1", step = 100000)
 flc4_1 <- filter_checkbox(id = "pandemic", label = "pandemic", sharedData = sd_top_tot, group = ~pandemic, inline = TRUE)
 
 # p_t <- ggplot(comb_data_trax, aes(x = max_streams, y = fct_rev(week_year), label = factor(paste(top_track, "|", n,
@@ -1516,8 +1583,33 @@ ssm_t <- dancemonkey %>%
 #              arrangeGrob(ssm_p, ssm_t, ncol = 2), # Second row with 2 plots in 2 different columns
 #              nrow = 2)
 
+grob1 <- grobTree(
+  textGrob("A1", x=0.145,  y=0.165, hjust=0,
+           gp=gpar(col="White", fontsize=13, fontface="bold")))
+grob2 <- grobTree(
+  textGrob("B1", x=0.285,  y=0.305, hjust=0,
+           gp=gpar(col="White", fontsize=13, fontface="bold")))
+grob3 <- grobTree(
+  textGrob("A2", x=0.425,  y=0.165, hjust=0,
+           gp=gpar(col="White", fontsize=13, fontface="bold")))
+grob4 <- grobTree(
+  textGrob("B2", x=0.595,  y=0.305, hjust=0,
+           gp=gpar(col="White", fontsize=13, fontface="bold")))
+grob5 <- grobTree(
+  textGrob("C", x=0.725,  y=0.75, hjust=0,
+           gp=gpar(col="White", fontsize=13, fontface="bold")))
+grob6 <- grobTree(
+  textGrob("B3", x=0.855,  y=0.305, hjust=0,
+           gp=gpar(col="White", fontsize=13, fontface="bold")))
+
+ssm_p1 <- ssm_p + annotation_custom(grob1) + annotation_custom(grob2) + annotation_custom(grob3) +
+  annotation_custom(grob4) + annotation_custom(grob5) + annotation_custom(grob6)
+
+ssm_t1 <- ssm_t + annotation_custom(grob1) + annotation_custom(grob2) + annotation_custom(grob3) +
+  annotation_custom(grob4) + annotation_custom(grob5) + annotation_custom(grob6)
+
     cep /
-(ssm_p | ssm_t)
+(ssm_p1 | ssm_t1)
 ```
 
 ***
@@ -1535,11 +1627,13 @@ The first cepstrogram plot shows the magnitude of each timbre feature per segmen
 - **c05 [Unknown]:** It has the highest magnitude at around 150 seconds, noticeable is the loudness of the "[Millenial Whoop](https://en.wikipedia.org/wiki/Millennial_whoop){target="_blank"}".
 
 ##### Self Similarity
-The second and third plots are Self Similarity Matrices (SSM); The first being pitch, and the second timbre. These plots show the structure of a track by denoting patterns of similarities that reoccur. Diagonal lines and a checkerboard pattern show similarity and repetition.
+The second and third plots are Self Similarity Matrices (SSM); The first being pitch, and the second timbre. These plots show the structure of a track by denoting patterns of similarities that reoccur. Diagonal lines and a checkerboard pattern show similarity and repetition. The black lines indicates the repeated parts.
 
-The timbre SSM is plotted using Euclidean norm, Euclidean distance and summarized by the mean. The plot shows a faint checkerboard pattern which implies some form of repetition in the track. At the 150 second mark there is a significant timbre difference. This is when the breakdown occurs with the earlier mentioned “Millenial Whoop”.
+The track seems to follow the following pattern: ***A1 - B1 - A2 - B2 - C - B3***
 
-The pitch SSM is plotted using Euclidean norm, cosine distance and summarized by root mean square. This plot shows a slightly more noticeable checkerboard pattern. At the 150 second mark, the plot shows a significant change.
+The timbre SSM is plotted using Euclidean norm, Euclidean distance and summarized by the mean. The plot shows a faint checkerboard pattern which implies some form of repetition in the track. The red lines at the 150 second mark ***C*** there is a significant timbre difference. This is when the breakdown occurs with the earlier mentioned “Millenial Whoop”.
+
+The pitch SSM is plotted using Euclidean norm, cosine distance and summarized by root mean square. This plot shows a slightly more noticeable checkerboard pattern. The 150 second mark ***C***, the plot shows a significant change.
 
 ***
 
